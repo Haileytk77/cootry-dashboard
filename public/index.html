@@ -1,227 +1,5882 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COOTRY TikTok Shop 报数看板</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-*{box-sizing:border-box;font-family:system-ui, sans-serif;margin:0;padding:0}
-body{background:#f4f6f8;padding:16px;color:#222}
-.container{max-width:1400px;margin:0 auto}
-h1{font-size:22px;margin-bottom:16px}
-.top-cards{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px,1fr));gap:12px;margin-bottom:16px}
-.card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 6px #00000012}
-.card .label{color:#666;font-size:13px}
-.card .val{font-size:24px;font-weight:bold;margin-top:4px}
-.panel{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px #00000012;margin-bottom:16px}
-.panel h3{margin-bottom:12px;font-size:16px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-button, select, input{padding:7px 10px;border-radius:6px;border:1px solid #ccc;font-size:14px}
-button{background:#2563eb;color:#fff;border:none;cursor:pointer}
-button.secondary{background:#eee;color:#222}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{border:1px solid #e5e7eb;padding:8px;text-align:left}
-th{background:#f9fafb}
-.chart-wrap{height:300px}
-.tabs{display:flex;gap:6px;margin-bottom:12px}
-.tab{padding:8px 14px;background:#eee;border-radius:6px;cursor:pointer}
-.tab.active{background:#2563eb;color:#fff}
-.hidden{display:none}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+
+:root{
+  --bg:#f2f3f6; --card:#fff; --ink:#141821; --muted:#71798a; --line:#e9ebf1;
+  --accent:#4b45d6; --accent-soft:#eeeefc;
+  --good:#0f9b6c; --bad:#e04f45;
+  --c1:#4b45d6; --c2:#7c78e8; --c3:#e0653c; --c4:#f0a93b;
+  --c5:#2aa6a0; --c6:#c2c6d2; --c7:#8e94a6;
+  --r:16px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 30px -22px rgba(16,24,40,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+body.loading{opacity:0}
+.wrap{max-width:1320px;margin:0 auto;padding:0 24px 48px}
+
+/* ---------- 顶栏 ---------- */
+.topbar{
+  position:sticky; top:0; z-index:20; background:rgba(255,255,255,.86);
+  backdrop-filter:saturate(160%) blur(12px); border-bottom:1px solid var(--line);
+}
+.topbar-in{max-width:1320px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.logo{
+  width:36px;height:36px;border-radius:11px;background:linear-gradient(145deg,#5b54e8,#3d37c4);
+  color:#fff;font-weight:700;font-size:17px;display:grid;place-items:center;
+  box-shadow:0 6px 16px -6px rgba(75,69,214,.6);letter-spacing:.5px
+}
+.brand h1{font-size:15.5px;margin:0;font-weight:650;letter-spacing:.2px}
+.brand p{margin:0;font-size:11.5px;color:var(--muted);letter-spacing:.4px}
+.dater{display:flex;align-items:center;gap:6px;margin-left:8px}
+.dater .nav{
+  width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;
+  color:#575f70;cursor:pointer;display:grid;place-items:center;font-size:15px;line-height:1;
+  transition:.15s
+}
+.dater .nav:hover{background:#f6f7fa;color:var(--ink)}
+.dater input[type=date]{
+  border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 10px;
+  font:inherit;font-size:13.5px;color:var(--ink);width:146px;text-align:center
+}
+.chip{
+  font-size:11px;padding:3px 8px;border-radius:20px;white-space:nowrap;letter-spacing:.2px;
+  border:1px solid transparent
+}
+.chip.ok{background:#e9f6ef;color:#0b7a54;border-color:#d2ecdf}
+.chip.warn{background:#fff4e6;color:#a8620b;border-color:#f8e3c4}
+.acts{margin-left:auto;display:flex;gap:8px}
+.btn{
+  font:inherit;font-size:13px;border-radius:10px;padding:8px 14px;cursor:pointer;
+  border:1px solid var(--line);background:#fff;color:var(--ink);transition:.15s;white-space:nowrap
+}
+.btn:hover{background:#f7f8fb}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 8px 18px -10px rgba(75,69,214,.9)}
+.btn.primary:hover{background:#403ac9}
+
+/* ---------- 通用卡片 ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin:26px 2px 12px}
+.section-title h2{font-size:14.5px;margin:0;font-weight:650;letter-spacing:.2px}
+.section-title span{font-size:12px;color:var(--muted)}
+
+/* ---------- Hero ---------- */
+.hero{display:flex;gap:34px;align-items:center;padding:23px 26px;margin-top:20px;position:relative;overflow:hidden}
+.hero::after{
+  content:"";position:absolute;right:-70px;top:-90px;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle,rgba(75,69,214,.10),transparent 68%);pointer-events:none
+}
+.hero-left{min-width:0;flex:1}
+.hero .k{font-size:12px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.hero-val{font-size:42px;font-weight:700;letter-spacing:-1.4px;line-height:1.15;margin:2px 0 6px}
+.delta{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+.delta em{font-style:normal;font-weight:650;padding:2px 8px;border-radius:7px}
+.delta.up em{background:#e9f6ef;color:#0b7a54}
+.delta.down em{background:#fdeeee;color:#b83a31}
+.delta.flat em{background:#f1f2f6;color:var(--muted)}
+.delta span{color:var(--muted);font-size:12px}
+.hero-meta{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.hero-meta b{color:var(--ink);font-weight:600;font-size:13px}
+.hero-right{display:flex;gap:22px;flex:0 0 auto;padding-left:10px}
+.ring{text-align:center}
+.ring-dial{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;position:relative}
+.ring-dial::after{content:"";position:absolute;inset:7px;background:#fff;border-radius:50%}
+.ring-in{position:relative;z-index:1;font-size:17px;font-weight:660;letter-spacing:-.3px}
+.ring p{margin:7px 0 0;font-size:11.5px;color:var(--muted)}
+
+/* ---------- 盈利 + 渠道 ---------- */
+.profit{display:flex;gap:34px;align-items:center;padding:20px 24px;margin-top:14px;flex-wrap:wrap}
+.profit-main{min-width:200px}
+.profit-main .k{font-size:12px;color:var(--muted);letter-spacing:.6px}
+.profit-main .big{font-size:30px;font-weight:700;letter-spacing:-.8px;margin:3px 0 6px}
+.profit-stats{display:flex;gap:14px 30px;flex-wrap:wrap;flex:1;justify-content:flex-end}
+.pstat .l{font-size:11.5px;color:var(--muted)}
+.pstat .v{font-size:16px;font-weight:650;margin-top:3px;font-variant-numeric:tabular-nums}
+.channels{margin-top:14px}
+.panel{padding:18px 20px}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.panel-head b{font-size:13.5px;font-weight:650}
+.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.mini .l{font-size:11.5px;color:var(--muted)}
+.mini .v{font-size:19px;font-weight:660;margin-top:3px;font-variant-numeric:tabular-nums}
+.mini .d{font-size:11px;margin-top:4px;font-weight:600}
+.mini .d i{font-style:normal;color:var(--muted);font-weight:400;margin-left:5px}
+.mini .d.up{color:var(--good)} .mini .d.down{color:var(--bad)} .mini .d.flat{color:var(--muted)}
+
+/* ---------- 图表 + 成本 ---------- */
+.grid2{display:grid;grid-template-columns:1.42fr 1fr;gap:14px;margin-top:14px;align-items:start}
+.card-pad{padding:18px 20px 16px}
+.chart-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.chart-tabs{display:flex;gap:4px;background:#f4f5f9;padding:3px;border-radius:10px}
+.chart-tabs button{
+  font:inherit;font-size:12px;border:0;background:transparent;color:#5c6376;padding:5px 10px;
+  border-radius:8px;cursor:pointer;white-space:nowrap
+}
+.chart-tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.1);font-weight:600}
+.chart-range{display:flex;gap:2px;font-size:11.5px;color:var(--muted)}
+.chart-range button{font:inherit;font-size:11.5px;background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 6px;border-radius:6px}
+.chart-range button.on{color:var(--accent);font-weight:600;background:var(--accent-soft)}
+#chartBox{position:relative;width:100%}
+.chart-tip{
+  position:absolute;top:6px;left:0;background:#1b1f2a;color:#fff;border-radius:9px;padding:7px 10px;
+  font-size:11.5px;pointer-events:none;opacity:0;transition:opacity .12s;white-space:nowrap;box-shadow:0 8px 20px -8px rgba(0,0,0,.5)
+}
+.chart-tip b{font-size:12px}
+.chart-tip span{color:#a9b0c0}
+.chart-summary{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:8px;padding-top:10px;border-top:1px dashed var(--line)}
+.chart-summary b{color:var(--ink);font-weight:600}
+
+/* 成本结构 */
+.stack{display:flex;height:11px;border-radius:6px;overflow:hidden;background:#f0f1f5;margin:4px 0 8px}
+.stack span{height:100%}
+.stack-legend{display:flex;justify-content:space-between;font-size:12px;margin-bottom:12px}
+.stack-legend .muted{color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.c1{background:var(--c1)} .c2{background:var(--c2)} .c3{background:var(--c3)}
+.c4{background:var(--c4)} .c5{background:var(--c5)} .c6{background:var(--c6)}
+.c7{background:var(--c7)} .gp{background:var(--good)}
+table.mini{width:100%;border-collapse:collapse;font-size:12.5px}
+table.mini th{font-weight:500;color:var(--muted);font-size:11.5px;text-align:left;padding:5px 0;border-bottom:1px solid var(--line)}
+table.mini td{padding:6px 0;border-bottom:1px solid #f5f6f9}
+table.mini tr.sum td{border-top:1px solid var(--line);border-bottom:0;font-weight:650;padding-top:9px}
+table.mini .r{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+
+/* ---------- 商品表 ---------- */
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px 10px}
+.table-head h2{font-size:14.5px;margin:0;font-weight:650}
+.table-head .meta{font-size:12px;color:var(--muted);margin-left:8px;font-weight:400}
+.prod-head-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.range-bar{display:flex;align-items:center;gap:10px;padding:0 20px 10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.range-bar label{display:flex;align-items:center;gap:6px}
+.range-bar input[type=date]{
+  border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 10px;
+  font:inherit;font-size:12.5px;color:var(--ink);width:146px
+}
+.range-bar .muted{font-size:11.5px}
+.search{
+  border:1px solid var(--line);border-radius:9px;padding:7px 11px;font:inherit;font-size:12.5px;
+  width:210px;background:#fafbfd;color:var(--ink);outline:none
+}
+.search:focus{background:#fff;border-color:#c9c7f2;box-shadow:0 0 0 3px rgba(75,69,214,.08)}
+.table-wrap{overflow-x:auto;padding:0 6px 4px}
+table.data{width:100%;border-collapse:collapse;font-size:13px}
+table.data th{
+  font-size:11.5px;color:var(--muted);font-weight:500;padding:9px 12px;white-space:nowrap;
+  border-bottom:1px solid var(--line);background:#fcfcfd;position:sticky;top:0
+}
+table.data th.sortable{cursor:pointer;user-select:none}
+table.data th.sortable:hover{color:var(--accent)}
+table.data td{padding:11px 12px;border-bottom:1px solid #f4f5f9;font-variant-numeric:tabular-nums}
+table.data tr:hover td{background:#fafbfe}
+table.data .r{text-align:right}
+table.data .l{text-align:left}
+.name-cell{display:flex;flex-direction:column;gap:1px;min-width:150px}
+.nm{font-weight:600;font-size:13px}
+.sku{font-size:10.5px;color:#9aa1ad;letter-spacing:.3px}
+.share-bar{display:block;height:3px;width:64px;background:#eef0f5;border-radius:2px;margin-left:auto;margin-top:4px;overflow:hidden}
+.ushare{display:inline-block;height:3px;width:56px;background:#eef0f5;border-radius:2px;margin-right:8px;overflow:hidden;vertical-align:middle}
+.ushare i{display:block;height:100%;background:linear-gradient(90deg,#8d88ee,#4b45d6)}
+.share-bar i{display:block;height:100%;background:linear-gradient(90deg,#8d88ee,#4b45d6)}
+.up{color:var(--good)} .down{color:var(--bad)} .flat{color:#9aa1ad}
+tr.sum td{background:#fbfbfd;font-weight:650;border-top:1px solid var(--line);color:var(--ink)}
+tr.ph td{color:var(--muted);font-style:italic}
+.empty{text-align:center;color:var(--muted);padding:32px 0}
+.note{padding:8px 20px 16px;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);margin-top:4px}
+
+/* ---------- 页脚 ---------- */
+.substats{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:11.5px;color:var(--muted);margin:10px 2px 0}
+.substats b{color:#3b4252;font-weight:600;font-variant-numeric:tabular-nums}
+.flag{font-style:normal;font-size:9.5px;background:#fff2e8;color:#a8620b;border:1px solid #fadfc6;border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:1px}
+.foot{margin-top:26px;font-size:11.5px;color:#8d94a2;line-height:1.9}
+.foot b{color:#5c6376;font-weight:600}
+
+/* ---------- 弹窗 ---------- */
+.modal{
+  position:fixed;inset:0;background:rgba(19,23,32,.42);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;z-index:40;padding:24px
+}
+.modal.show{display:flex}
+.modal-card{
+  background:#fff;border-radius:18px;width:min(760px,100%);max-height:88vh;overflow:auto;
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.5);animation:pop .18s ease-out
+}
+@keyframes pop{from{transform:translateY(8px) scale(.99);opacity:.6}to{transform:none;opacity:1}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 10px}
+.modal-head h3{margin:0;font-size:16px;font-weight:660}
+.x{border:0;background:#f4f5f9;width:30px;height:30px;border-radius:9px;cursor:pointer;color:#5c6376;font-size:16px;line-height:1}
+.x:hover{background:#eceef4}
+.tabs{display:flex;gap:6px;padding:0 22px;border-bottom:1px solid var(--line)}
+.tab{
+  border:0;background:none;font:inherit;font-size:13px;color:var(--muted);padding:9px 12px;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px
+}
+.tab.on{color:var(--accent);border-color:var(--accent);font-weight:600}
+.tabpane{display:none;padding:18px 22px 22px}
+.tabpane.on{display:block}
+.drop{
+  border:1.5px dashed #d9dce4;border-radius:12px;padding:14px 16px;background:#fafbfd;position:relative;cursor:pointer;transition:.15s
+}
+.drop:hover{border-color:#b9b6ee;background:#f8f7ff}
+.drop label{display:block;font-size:12.5px;font-weight:600;margin-bottom:4px}
+.drop .hint{font-size:11.5px;color:var(--muted)}
+.drop .fname{font-size:11.5px;color:#8d94a2;margin-top:6px;display:block}
+.drop .fname.ok{color:var(--good)}
+.drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px}
+.field input,.field select{
+  width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:13px;
+  background:#fafbfd;outline:none
+}
+.field input:focus{border-color:#c9c7f2;background:#fff}
+.preview{margin-top:16px;border-radius:12px;padding:14px 16px;background:#f7f8fb;font-size:12px;color:var(--muted)}
+.preview.ok{background:#f2fbf6;border:1px solid #d9f0e4}
+.preview.err{background:#fdf4f3;border:1px solid #f6dcd8;color:#b83a31}
+.pv-head{font-size:13px;font-weight:650;color:var(--ink);margin-bottom:9px}
+.pv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 18px;color:#3b4252}
+.preview .btn{margin-top:14px}
+.warn-txt{color:#a8620b;margin:9px 0 0}
+.row-btns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.link{border:0;background:none;font:inherit;font-size:12px;color:var(--accent);cursor:pointer;padding:2px 4px}
+.link.danger{color:#c9483e}
+table.list{width:100%;border-collapse:collapse;font-size:12.5px}
+table.list th{font-size:11.5px;color:var(--muted);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.list td{padding:9px 10px;border-bottom:1px solid #f5f6f9}
+table.list .r{text-align:right}
+.toast{
+  position:fixed;left:50%;bottom:36px;transform:translate(-50%,16px);background:#1b1f2a;color:#fff;
+  padding:10px 18px;border-radius:11px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.modal-open{overflow:hidden}
+
+@media (max-width:1080px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpis.six{grid-template-columns:repeat(3,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .hero{flex-wrap:wrap}
+  .hero-right{width:100%;justify-content:space-between}
+}
+@media (max-width:720px){
+  .wrap{padding:0 14px 36px}
+  .topbar-in{flex-wrap:wrap;gap:10px;padding:10px 14px}
+  .acts{margin-left:0;width:100%}
+  .hero-val{font-size:34px}
+  .hero-right{gap:10px;flex-wrap:wrap;justify-content:space-between}
+  .ring-dial{width:64px;height:64px}
+  .ring-dial::after{inset:6px}
+  .ring-in{font-size:14px}
+  .ring p{font-size:10.5px}
+  .kpis.six{grid-template-columns:repeat(2,1fr)}
+  .fields{grid-template-columns:1fr 1fr}
+}
+
+.field.wide{grid-column:span 2}
+.idcell{font-size:11px;line-height:1.5;word-break:break-all;color:#8b93a3}
 </style>
+<!-- SHELL -->
 </head>
-<body>
-<div class="container">
-<h1>COOTRY 店铺每日报数看板</h1>
-<div class="top-cards">
-  <div class="card"><div class="label">店铺总GMV</div><div class="val" id="totalGmv">$0.00</div></div>
-  <div class="card"><div class="label">总出单件数（扣样品）</div><div class="val" id="totalQty">0</div></div>
-  <div class="card"><div class="label">总利润</div><div class="val" id="totalProfit">$0.00</div></div>
-  <div class="card"><div class="label">利润率</div><div class="val" id="profitRate">0%</div></div>
-  <div class="card"><div class="label">广告总花费</div><div class="val" id="adSpend">$0.00</div></div>
-  <div class="card"><div class="label">整体广告ROI</div><div class="val" id="roi">0.00</div></div>
+<body class="loading">
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="logo">C</div>
+      <div>
+        <h1>COOTRY 每日报数</h1>
+        <p>TikTok Shop · 美区店铺</p>
+      </div>
+    </div>
+    <div class="dater">
+      <button class="nav" id="prevDay" title="前一天">‹</button>
+      <input type="date" id="datePick">
+      <button class="nav" id="nextDay" title="后一天">›</button>
+      <span class="chip ok" id="levelChip">商品明细已同步</span>
+    </div>
+    <div class="acts">
+      <button class="btn" id="btnCost">成本表</button>
+      <button class="btn" id="btnManage">数据管理</button>
+      <button class="btn primary" id="btnUpdate">＋ 更新当日数据</button>
+    </div>
+  </div>
 </div>
 
-<div class="panel">
-  <div class="tabs">
-    <div class="tab active" data-tab="daily">每日数据录入</div>
-    <div class="tab" data-tab="product">商品时段汇总表</div>
-    <div class="tab" data-tab="cost">产品成本物流表</div>
+<div class="wrap">
+
+  <div id="monthBlock"></div>
+
+  <section class="card hero">
+    <div class="hero-left">
+      <div class="k">店铺总收入 · GMV</div>
+      <div class="hero-val" id="heroVal">—</div>
+      <div class="delta flat" id="heroDelta"></div>
+      <div class="hero-meta" id="heroMeta"></div>
+      <div class="hero-meta" style="margin-top:6px"><span class="muted" id="dateMeta"></span></div>
+    </div>
+    <div class="hero-right" id="heroRings"></div>
+  </section>
+
+  <section class="card profit" id="profitBlock"></section>
+  <div class="grid2 channels" id="channelBlock"></div>
+
+  <div class="grid2">
+    <section class="card card-pad">
+      <div class="chart-head">
+        <div class="chart-tabs">
+          <button data-metric="gmv" class="on">总收入</button>
+          <button data-metric="gp">毛利</button>
+          <button data-metric="units">件数</button>
+          <button data-metric="adSpend">广告花费</button>
+          <button data-metric="affCom">联盟佣金</button>
+        </div>
+        <div class="chart-range">
+          <button data-range="recent" class="on">近30天</button>
+          <button data-range="all">全部</button>
+        </div>
+      </div>
+      <div id="chartBox"></div>
+      <div class="chart-summary" id="chartSummary"></div>
+    </section>
+
+    <section class="card card-pad">
+      <div class="chart-head">
+        <div><b style="font-size:14px">收入结构 & 毛利拆解</b></div>
+        <div class="muted" style="font-size:11.5px">占 GMV 比例</div>
+      </div>
+      <div id="pnlBody"></div>
+    </section>
   </div>
 
-  <div id="daily">
-    <div class="row">
-      <input type="date" id="dayDate">
-      <button onclick="addDayRow()">新增当日行</button>
-      <button class="secondary" onclick="saveData()">保存到云端</button>
-      <button class="secondary" onclick="loadData()">从云端刷新</button>
+  <section class="card" style="margin-top:14px">
+    <div class="table-head">
+      <div class="prod-head-left">
+        <h2>商品明细 <span class="meta" id="prodCount"></span></h2>
+        <div class="chart-tabs" id="prodTabs">
+          <button data-ptab="day" class="on">当日明细</button>
+          <button data-ptab="range">时段汇总</button>
+        </div>
+      </div>
+      <input class="search" id="prodSearch" placeholder="搜索商品名或 SKU">
     </div>
-    <table id="dailyTable">
-      <thead>
-        <tr>
-          <th>日期</th>
-          <th>原始订单金额</th>
-          <th>Tax</th>
-          <th>平台折扣</th>
-          <th>样品件数</th>
-          <th>原始件数</th>
-          <th>广告花费</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <div class="chart-wrap"><canvas id="chartLine"></canvas></div>
-  </div>
+    <div class="range-bar" id="rangeBar" style="display:none">
+      <label>开始 <input type="date" id="rangeStart"></label>
+      <label>结束 <input type="date" id="rangeEnd"></label>
+      <span class="muted" id="rangeMeta"></span>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead id="prodHead"></thead>
+        <tbody id="prodBody"></tbody>
+        <tfoot id="prodFoot"></tfoot>
+      </table>
+    </div>
+    <div class="note" id="prodNote"></div>
+  </section>
 
-  <div id="product" class="hidden">
-    <div class="row">
-      <input type="date" id="sStart">
-      <input type="date" id="sEnd">
-      <button onclick="calcProductTable()">统计该时段</button>
-    </div>
-    <table id="productTable">
-      <thead>
-        <tr>
-          <th>商品ID</th>
-          <th>商品名称</th>
-          <th>GMV</th>
-          <th>出单件数</th>
-          <th>广告花费</th>
-          <th>广告ROI</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div id="cost" class="hidden">
-    <div class="row">
-      <button onclick="addCostRow()">新增产品成本行</button>
-      <button class="secondary" onclick="saveData()">保存</button>
-    </div>
-    <table id="costTable">
-      <thead>
-        <tr>
-          <th>商品ID</th>
-          <th>采购成本</th>
-          <th>物流成本</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div class="foot">
+    <b>口径说明：</b>总收入＝Σ（买家实付 Order Amount − Taxes ＋ 该 SKU 平台折扣），按订单号去重后计算；多 SKU 订单按各 SKU（折扣后小计＋平台折扣）占比分摊到商品。实付 $0 的订单计为<b>样品</b>，<b>不计入订单数</b>，样品成本与运费计入样品费用。
+    毛利＝GMV − 产品成本 − 物流成本 − 联盟佣金 − 广告花费 − 样品费用 − 平台佣金 6% − 支付手续费 1% − 预计退款 10% − 退货物流补贴 1% − 合资营销 1%（即 81% GMV 扣除各项实付成本）。
+    联盟 ROI＝达人归因 GMV ÷ 预计佣金；广告 ROI＝广告总收入 ÷ 广告花费；总 ROI＝GMV ÷（佣金＋广告＋合资 1%）。
+    商品成本取「产品成本＋物流」表的产品成本（$）与调整后物流费用。
   </div>
 </div>
+
+<!-- 更新数据 -->
+<div class="modal" id="modalUpdate">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>更新当日数据</h3>
+      <button class="x" data-close="modalUpdate">✕</button>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="tab-upload">上传三个后台表</button>
+      <button class="tab" data-tab="tab-manual">手动录入汇总</button>
+      <button class="tab" data-tab="tab-backup">备份 / 恢复</button>
+    </div>
+
+    <div class="tabpane on" id="tab-upload">
+      <div class="drop">
+        <label>① 全部订单表（OrderSKUList）</label>
+        <div class="hint">用于计算总收入、订单数、件数、样品与商品收入</div>
+        <span class="fname">未选择文件</span>
+        <input type="file" id="fileOrders" accept=".xlsx">
+      </div>
+      <div class="drop" style="margin-top:10px">
+        <label>② 商品广告数据（Product data）</label>
+        <div class="hint">用于计算广告花费、广告收入与 ROI</div>
+        <span class="fname">未选择文件</span>
+        <input type="file" id="fileAd" accept=".xlsx">
+      </div>
+      <div class="drop" style="margin-top:10px">
+        <label>③ 联盟 / 达人交易分析（Transaction Analysis）</label>
+        <div class="hint">用于计算联盟收入、佣金与 ROI</div>
+        <span class="fname">未选择文件</span>
+        <input type="file" id="fileAff" accept=".xlsx">
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label>归属日期</label>
+          <input type="date" id="upDate">
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <label>文件解析在浏览器本地完成，不会上传任何数据</label>
+          <div style="font-size:11.5px;color:#8d94a2;padding-top:6px">支持 .xlsx；同一天的记录会覆盖旧数据</div>
+        </div>
+      </div>
+      <div class="preview" id="upPreview"><span class="muted">上传后自动解析并预览</span></div>
+    </div>
+
+    <div class="tabpane" id="tab-manual">
+      <div class="fields">
+        <div class="field"><label>日期</label><input type="date" id="mDate"></div>
+        <div class="field"><label>总收入 GMV (USD)</label><input id="mGmv" placeholder="4152.43"></div>
+        <div class="field"><label>订单数（不含样品）</label><input id="mOrders" placeholder="129"></div>
+        <div class="field"><label>件数</label><input id="mUnits" placeholder="143"></div>
+        <div class="field"><label>样品件数</label><input id="mSamples" placeholder="6"></div>
+        <div class="field"><label>广告花费</label><input id="mAdSpend" placeholder="333.81"></div>
+        <div class="field"><label>广告收入</label><input id="mAdRev" placeholder="3629.93"></div>
+        <div class="field"><label>联盟收入</label><input id="mAffRev" placeholder="3223.10"></div>
+        <div class="field"><label>联盟佣金</label><input id="mAffCom" placeholder="326.94"></div>
+        <div class="field"><label>产品成本（合计 $）</label><input id="mProdCost" placeholder="885.26"></div>
+        <div class="field"><label>物流成本（合计 $）</label><input id="mLogiCost" placeholder="1200.13"></div>
+        <div class="field"><label>样品费用（合计 $）</label><input id="mSampCost" placeholder="95.69"></div>
+      </div>
+      <div class="row-btns">
+        <button class="btn primary" id="mSave">保存为汇总日</button>
+        <span class="muted" style="font-size:11.5px;align-self:center">手动录入只有店铺级数据，商品明细为空。平台费/退款等按 19% GMV 自动计算。</span>
+      </div>
+    </div>
+
+    <div class="tabpane" id="tab-backup">
+      <p style="font-size:12.5px;color:#5c6376;margin:0 0 14px">
+        本机新增/修改的数据保存在浏览器本地。换电脑、换浏览器或清理缓存前，请先导出备份。
+      </p>
+      <div class="row-btns" style="margin-top:0">
+        <button class="btn" id="btnExport">导出备份 JSON</button>
+        <label class="btn" style="position:relative;overflow:hidden">导入备份 JSON
+          <input type="file" id="fileBackup" accept=".json" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+        </label>
+        <button class="btn" id="btnSeed" style="color:#c9483e">恢复内置历史数据</button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<script>
-// ⚠️ 这里填你的Vercel部署之后的接口地址！部署完替换
-const API = "/api/state";
-let store = {daily:[],cost:[],product:[]};
-let chartIns = null;
+<!-- 数据管理 -->
+<div class="modal" id="modalManage">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>数据管理</h3>
+      <button class="x" data-close="modalManage">✕</button>
+    </div>
+    <div class="tabpane on">
+      <table class="list">
+        <thead><tr><th>日期</th><th>类型</th><th>来源</th><th class="r">总收入</th><th class="r">毛利</th><th></th></tr></thead>
+        <tbody id="manageBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-// 标签切换
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  document.querySelectorAll('#daily,#product,#cost').forEach(el=>el.classList.add('hidden'));
-  document.getElementById(t.dataset.tab).classList.remove('hidden');
-})
+<!-- 成本表 -->
+<div class="modal" id="modalCost">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>产品成本 / 物流表</h3>
+      <button class="x" data-close="modalCost">✕</button>
+    </div>
+    <div class="tabpane on">
+      <div class="fields" style="margin-top:0">
+        <div class="field"><label>SKU 编码</label><input id="cSku" placeholder="如 COJA037"></div>
+        <div class="field"><label>商品名称（选填）</label><input id="cName" placeholder="选填"></div>
+        <div class="field"><label>产品成本 $</label><input id="cPc" type="number" step="0.01" min="0" placeholder="0"></div>
+        <div class="field"><label>物流成本 $</label><input id="cLg" type="number" step="0.01" min="0" placeholder="0"></div>
+        <div class="field wide"><label>商品ID（多个用逗号分隔，选填）</label><input id="cIds" placeholder="用于把广告表花费/收入自动归属到该 SKU"></div>
+      </div>
+      <div class="row-btns" style="margin-top:12px">
+        <button class="btn primary" id="cSave">保存成本</button>
+        <button class="btn" id="cCancel" style="display:none">取消编辑</button>
+        <span class="muted" style="font-size:11.5px;align-self:center">成本只保存在本机；后续上传的报表按此成本计算毛利。</span>
+      </div>
+      <table class="list" style="margin-top:14px">
+        <thead><tr><th>SKU</th><th>商品名称</th><th>商品ID</th><th class="r">产品成本 $</th><th class="r">物流 $</th><th class="r">单位总成本</th><th>来源</th><th></th></tr></thead>
+        <tbody id="costBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-async function loadData(){
-  const res = await fetch(API+"?key=main_data");
-  const json = await res.json();
-  if(json && Object.keys(json).length>0) store = json;
-  renderDaily();renderCost();renderProduct();calcSummary();drawChart();
-}
-async function saveData(){
-  await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(store)});
-  alert("✅ 已同步云端数据库！");
-}
+<div class="toast" id="toast"></div>
 
-function addDayRow(){
-  const d = document.getElementById("dayDate").value;
-  if(!d) return alert("先选日期");
-  store.daily.push({date:d,amount:0,tax:0,discount:0,sampleQty:0,rawQty:0,ad:0});
-  renderDaily();calcSummary();drawChart();
-}
-function addCostRow(){
-  store.cost.push({skuId:"",cost:0,logistics:0});
-  renderCost();
-}
 
-function renderDaily(){
-  const tb = document.querySelector("#dailyTable tbody");
-  tb.innerHTML = "";
-  store.daily.forEach((r,i)=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input value="${r.date}" onchange="store.daily[${i}].date=this.value"></td>
-      <td><input type="number" step="0.01" value="${r.amount}" onchange="store.daily[${i}].amount=Number(this.value)"></td>
-      <td><input type="number" step="0.01" value="${r.tax}" onchange="store.daily[${i}].tax=Number(this.value)"></td>
-      <td><input type="number" step="0.01" value="${r.discount}" onchange="store.daily[${i}].discount=Number(this.value)"></td>
-      <td><input type="number" value="${r.sampleQty}" onchange="store.daily[${i}].sampleQty=Number(this.value)"></td>
-      <td><input type="number" value="${r.rawQty}" onchange="store.daily[${i}].rawQty=Number(this.value)"></td>
-      <td><input type="number" step="0.01" value="${r.ad}" onchange="store.daily[${i}].ad=Number(this.value)"></td>
-      <td><button onclick="store.daily.splice(${i},1);renderDaily();calcSummary();drawChart()">删除</button></td>
-    `;
-    tb.appendChild(tr);
-  })
-}
-function renderCost(){
-  const tb = document.querySelector("#costTable tbody");
-  tb.innerHTML = "";
-  store.cost.forEach((r,i)=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input value="${r.skuId}" onchange="store.cost[${i}].skuId=this.value"></td>
-      <td><input type="number" step="0.01" value="${r.cost}" onchange="store.cost[${i}].cost=Number(this.value)"></td>
-      <td><input type="number" step="0.01" value="${r.logistics}" onchange="store.cost[${i}].logistics=Number(this.value)"></td>
-      <td><button onclick="store.cost.splice(${i},1);renderCost()">删除</button></td>
-    `;
-    tb.appendChild(tr);
-  })
-}
+<script>/* Minimal XLSX reader: ZIP (deflate-raw via DecompressionStream) + sheet XML -> rows */
+(function (global) {
+  'use strict';
 
-function calcSummary(){
-  let gmvAll=0,qtyAll=0,adAll=0,profitAll=0;
-  store.daily.forEach(row=>{
-    const realGmv = row.amount - row.tax + row.discount;
-    const realQty = Math.max(0, row.rawQty - row.sampleQty);
-    gmvAll += realGmv;
-    qtyAll += realQty;
-    adAll += row.ad;
-  })
-  // 简易毛利：GMV减去匹配到的成本（你后续可以完善）
-  const rate = gmvAll ? (profitAll/gmvAll*100).toFixed(1) : 0;
-  const roi = adAll>0 ? (gmvAll/adAll).toFixed(2) : 0;
-  document.getElementById("totalGmv").innerText = "$"+gmvAll.toFixed(2);
-  document.getElementById("totalQty").innerText = qtyAll;
-  document.getElementById("totalProfit").innerText = "$"+profitAll.toFixed(2);
-  document.getElementById("profitRate").innerText = rate+"%";
-  document.getElementById("adSpend").innerText = "$"+adAll.toFixed(2);
-  document.getElementById("roi").innerText = roi;
-}
+  function u16(d, o) { return d[o] | (d[o + 1] << 8); }
+  function u32(d, o) { return (d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24)) >>> 0; }
+  function u64(d, o) { return u32(d, o) + u32(d, o + 4) * 4294967296; }
 
-function calcProductTable(){
-  // 时段汇总逻辑，你后续导入商品明细时在这里扩充
-  document.querySelector("#productTable tbody").innerHTML="<tr><td colspan='6'>后续导入商品明细后自动统计</td></tr>"
-}
+  async function inflateRaw(bytes) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('当前浏览器不支持解压（需要 Chrome/Edge 103+ 或 Safari 16.4+）');
+    const ds = new DecompressionStream('deflate-raw');
+    const stream = new Blob([bytes]).stream().pipeThrough(ds);
+    const buf = await new Response(stream).arrayBuffer();
+    return new Uint8Array(buf);
+  }
 
-function drawChart(){
-  const ctx = document.getElementById("chartLine").getContext("2d");
-  const sorted = [...store.daily].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const labels = sorted.map(x=>x.date);
-  const gmvData = sorted.map(x=>x.amount - x.tax + x.discount);
-  if(chartIns) chartIns.destroy();
-  chartIns = new Chart(ctx,{
-    type:"line",
-    data:{labels:labels,datasets:[{label:"每日GMV",data:gmvData,borderColor:"#2563eb"}]},
-    options:{responsive:true,maintainAspectRatio:false}
-  })
-}
-window.onload=loadData;
+  async function unzip(arrayBuffer) {
+    const d = new Uint8Array(arrayBuffer);
+    let eocd = -1;
+    for (let i = d.length - 22; i >= Math.max(0, d.length - 65558); i--) {
+      if (d[i] === 0x50 && d[i + 1] === 0x4b && d[i + 2] === 0x05 && d[i + 3] === 0x06) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('不是有效的 xlsx 文件（缺少 ZIP 目录）');
+    const count = u16(d, eocd + 10);
+    let p = u32(d, eocd + 16);
+    const files = {};
+    for (let i = 0; i < count; i++) {
+      if (u32(d, p) !== 0x02014b50) break;
+      const method = u16(d, p + 10);
+      const csize = u32(d, p + 20);
+      const nlen = u16(d, p + 28), elen = u16(d, p + 30), clen = u16(d, p + 32);
+      const lho = u32(d, p + 42);
+      const name = new TextDecoder('utf-8').decode(d.subarray(p + 46, p + 46 + nlen));
+      const dataStart = lho + 30 + u16(d, lho + 26) + u16(d, lho + 28);
+      const raw = d.subarray(dataStart, dataStart + csize);
+      let out;
+      if (method === 0) out = raw;
+      else if (method === 8) out = await inflateRaw(raw);
+      else out = raw;
+      files[name] = out;
+      p += 46 + nlen + elen + clen;
+    }
+    return files;
+  }
+
+  const dec = new TextDecoder('utf-8');
+  function decodeEntities(s) {
+    return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'").replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n))
+      .replace(/&#x([0-9a-fA-F]+);/g, (m, n) => String.fromCharCode(parseInt(n, 16)))
+      .replace(/&amp;/g, '&');
+  }
+
+  function colIndex(ref) {
+    let n = 0;
+    for (let i = 0; i < ref.length; i++) n = n * 26 + (ref.charCodeAt(i) - 64);
+    return n - 1;
+  }
+
+  function parseShared(xml) {
+    const out = [];
+    const re = /<si[^>]*>([\s\S]*?)<\/si>/g;
+    let m;
+    while ((m = re.exec(xml))) {
+      const inner = m[1];
+      let text = '';
+      const tre = /<t[^>]*>([\s\S]*?)<\/t>/g;
+      let t;
+      while ((t = tre.exec(inner))) text += t[1];
+      out.push(decodeEntities(text));
+    }
+    return out;
+  }
+
+  function parseSheet(xml, shared) {
+    const rows = [];
+    const rowRe = /<row[^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/row>/g;
+    let m;
+    while ((m = rowRe.exec(xml))) {
+      const r = parseInt(m[1], 10) - 1;
+      const cells = rows[r] || [];
+      const cellRe = /<c[^>]*r="([A-Z]+)\d+"[^>]*?(?:\/>|>([\s\S]*?)<\/c>)/g;
+      let c;
+      while ((c = cellRe.exec(m[2]))) {
+        const idx = colIndex(c[1]);
+        const inner = c[2] || '';
+        const open = c[0].slice(0, c[0].indexOf('>'));
+        let val = null;
+        if (/\st="s"/.test(open)) {
+          const v = /<v>([\s\S]*?)<\/v>/.exec(inner);
+          if (v) val = shared[+v[1]];
+        } else if (/t="inlineStr"/.test(open)) {
+          const t2 = /<t[^>]*>([\s\S]*?)<\/t>/.exec(inner);
+          if (t2) val = decodeEntities(t2[1]);
+        } else if (/t="str"/.test(open)) {
+          const v = /<v[^>]*>([\s\S]*?)<\/v>/.exec(inner);
+          if (v) val = decodeEntities(v[1]);
+        } else {
+          const v = /<v>([\s\S]*?)<\/v>/.exec(inner);
+          if (v) { const n = Number(v[1]); val = isNaN(n) ? decodeEntities(v[1]) : n; }
+        }
+        cells[idx] = val;
+      }
+      rows[r] = cells;
+    }
+    for (let i = 0; i < rows.length; i++) if (!rows[i]) rows[i] = [];
+    return rows;
+  }
+
+  async function readXlsx(fileOrBuffer) {
+    let buf;
+    if (fileOrBuffer instanceof ArrayBuffer) buf = fileOrBuffer;
+    else buf = await fileOrBuffer.arrayBuffer();
+    const files = await unzip(buf);
+    let sheetPath = null;
+    const wbXml = files['xl/workbook.xml'] ? dec.decode(files['xl/workbook.xml']) : '';
+    const relsXml = files['xl/_rels/workbook.xml.rels'] ? dec.decode(files['xl/_rels/workbook.xml.rels']) : '';
+    const sm = /<sheet[^>]*r:id="([^"]+)"/.exec(wbXml);
+    if (sm && relsXml) {
+      const rel = new RegExp('<Relationship[^>]*Id="' + sm[1] + '"[^>]*Target="([^"]+)"').exec(relsXml);
+      if (rel) sheetPath = 'xl/' + rel[1].replace(/^\/?(xl\/)?/, '');
+    }
+    if (!sheetPath || !files[sheetPath]) {
+      const names = Object.keys(files).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n))
+        .sort((a, b) => (+a.match(/\d+/)[0]) - (+b.match(/\d+/)[0]));
+      sheetPath = names[0];
+    }
+    if (!sheetPath) throw new Error('xlsx 中没有找到工作表');
+    const shared = files['xl/sharedStrings.xml'] ? parseShared(dec.decode(files['xl/sharedStrings.xml'])) : [];
+    return parseSheet(dec.decode(files[sheetPath]), shared);
+  }
+
+  global.readXlsx = readXlsx;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>window.__DATA__ = {
+ "brand": "COOTRY",
+ "currency": "USD",
+ "rate": 6.92,
+ "updatedAt": "2026-11-25",
+ "cost": {
+  "COAB035": {
+   "name": "基础长袖",
+   "pc": 3.7572,
+   "lg": 7.6,
+   "ids": [
+    "1731390301187773057",
+    "1732177347924103809"
+   ]
+  },
+  "COHA001": {
+   "name": "束脚长裤",
+   "pc": 4.7688,
+   "lg": 8.0,
+   "ids": [
+    "1731384993167479425"
+   ]
+  },
+  "COHB034": {
+   "name": "蝴蝶短裤",
+   "pc": 5.9393,
+   "lg": 7.0,
+   "ids": [
+    "1731131707582485121"
+   ]
+  },
+  "COAC005": {
+   "name": "双肩带吊带",
+   "pc": 3.5405,
+   "lg": 6.8,
+   "ids": [
+    "1732183375477052033"
+   ]
+  },
+  "COEB011": {
+   "name": "拉链夹克",
+   "pc": 7.3699,
+   "lg": 7.9,
+   "ids": [
+    "1731136293788881537"
+   ]
+  },
+  "COLA003": {
+   "name": "方领连体衣",
+   "pc": 3.974,
+   "lg": 7.3,
+   "ids": [
+    "1731507675208389249"
+   ]
+  },
+  "COHB037": {
+   "name": "格子短裤",
+   "pc": 3.0347,
+   "lg": 6.6,
+   "ids": [
+    "1732165433739285121"
+   ]
+  },
+  "FY020": {
+   "name": "工字背心",
+   "pc": 3.685,
+   "lg": 6.6,
+   "ids": [
+    "1732183285335888513"
+   ]
+  },
+  "COAB001": {
+   "name": "高领保暖",
+   "pc": 4.6676,
+   "lg": 7.5,
+   "ids": [
+    "1731385594322850433"
+   ]
+  },
+  "COGA001": {
+   "name": "网球裙",
+   "pc": 5.2023,
+   "lg": 7.6,
+   "ids": [
+    "1731070556085523073"
+   ]
+  },
+  "FY013": {
+   "name": "连帽夹克",
+   "pc": 7.4133,
+   "lg": 7.1,
+   "ids": [
+    "1731797225511424641"
+   ]
+  },
+  "COEB007": {
+   "name": "防晒拉链外套",
+   "pc": 7.0087,
+   "lg": 7.9,
+   "ids": [
+    "1731090625251283585"
+   ]
+  },
+  "COIA001": {
+   "name": "防晒短袖",
+   "pc": 3.7572,
+   "lg": 6.8,
+   "ids": []
+  },
+  "COJA036": {
+   "name": "条纹套装",
+   "pc": 5.9249,
+   "lg": 9.1,
+   "ids": [
+    "1732252745161740929"
+   ]
+  },
+  "COJA014": {
+   "name": "吊带泳装套装",
+   "pc": 7.4422,
+   "lg": 9.1,
+   "ids": [
+    "1732252794835145345"
+   ]
+  },
+  "COFC003": {
+   "name": "吊带网球裙套装",
+   "pc": 6.0694,
+   "lg": 7.9,
+   "ids": [
+    "1729489779516216961"
+   ]
+  },
+  "COHB021": {
+   "name": "运动短裤",
+   "pc": 5.5347,
+   "lg": 7.3,
+   "ids": [
+    "1731100075799450241"
+   ]
+  },
+  "FY019": {
+   "name": "V领短袖",
+   "pc": 3.9017,
+   "lg": 7.0,
+   "ids": [
+    "1732509580232790657"
+   ]
+  },
+  "COAA025": {
+   "name": "基础短袖",
+   "pc": 3.2225,
+   "lg": 7.0,
+   "ids": [
+    "1732306721058427521"
+   ]
+  },
+  "COHB042": {
+   "name": "短裤",
+   "pc": 4.1185,
+   "lg": 7.8,
+   "ids": [
+    "1732405462682210945"
+   ]
+  },
+  "COAC021": {
+   "name": "胸棉背心",
+   "pc": 5.0578,
+   "lg": 7.8,
+   "ids": [
+    "1732339088258863745"
+   ]
+  },
+  "COFC001": {
+   "name": "连衣裙",
+   "pc": 7.5145,
+   "lg": 9.7,
+   "ids": [
+    "1731136201872937601"
+   ]
+  },
+  "GTBA265(背心)": {
+   "name": "背心",
+   "pc": 3.4393,
+   "lg": 7.0,
+   "ids": []
+  },
+  "GTBE4628(衬衫)": {
+   "name": "GTBE4628(衬衫)",
+   "pc": 5.1301,
+   "lg": 7.2,
+   "ids": []
+  },
+  "GTBA62(短袖)": {
+   "name": "GTBA62(短袖)",
+   "pc": 3.9451,
+   "lg": 7.0,
+   "ids": []
+  },
+  "GTBE5919(半裙)": {
+   "name": "GTBE5919(半裙)",
+   "pc": 7.4855,
+   "lg": 9.5,
+   "ids": []
+  },
+  "COJA037": {
+   "name": "长袖条纹套装",
+   "pc": 8.237,
+   "lg": 11.0,
+   "ids": [
+    "1732453017045406337"
+   ]
+  },
+  "COAB058": {
+   "name": "大圆领T恤",
+   "pc": 3.5983,
+   "lg": 7.9053,
+   "ids": [
+    "1732453069718721153"
+   ]
+  },
+  "COAB060": {
+   "name": "套头衫",
+   "pc": 7.2977,
+   "lg": 11.167,
+   "ids": [
+    "1732534366125527681"
+   ]
+  },
+  "COAB061": {
+   "name": "方领T恤",
+   "pc": 0.0,
+   "lg": 0.0,
+   "ids": [
+    "1732536391816090241"
+   ]
+  },
+  "COEB021": {
+   "name": "摇粒绒外套",
+   "pc": 6.3584,
+   "lg": 8.0,
+   "ids": [
+    "1732456431938343553"
+   ]
+  },
+  "COHA037": {
+   "name": "喇叭裤",
+   "pc": 6.3584,
+   "lg": 10.3725,
+   "ids": [
+    "1732452995035075201"
+   ]
+  },
+  "COEB017": {
+   "name": "卫衣外套",
+   "pc": 7.659,
+   "lg": 11.3725,
+   "ids": [
+    "1732461725845852801"
+   ]
+  },
+  "COAB054": {
+   "name": "半拉链摇粒绒卫衣",
+   "pc": 6.5029,
+   "lg": 10.0,
+   "ids": [
+    "1732596078502646401"
+   ]
+  },
+  "COEB012": {
+   "name": "飞机夹克",
+   "pc": 7.4855,
+   "lg": 11.4,
+   "ids": [
+    "1731757793204343425"
+   ]
+  },
+  "COAB064": {
+   "name": "套头卫衣",
+   "pc": 6.6474,
+   "lg": 9.35,
+   "ids": [
+    "1732575002694816385"
+   ]
+  },
+  "COEC001": {
+   "name": "摇粒绒马甲",
+   "pc": 6.4306,
+   "lg": 9.35,
+   "ids": [
+    "1732575127362638465"
+   ]
+  },
+  "COBB003": {
+   "name": "条纹开衫",
+   "pc": 8.526,
+   "lg": 11.0,
+   "ids": [
+    "1732575008206787201"
+   ]
+  },
+  "COHA055": {
+   "name": "撞色哈伦裤",
+   "pc": 6.6474,
+   "lg": 9.8,
+   "ids": [
+    "1732536809045660289"
+   ]
+  },
+  "COHA056": {
+   "name": "九分裤",
+   "pc": 7.2254,
+   "lg": 10.1,
+   "ids": [
+    "1732536918723170945"
+   ]
+  },
+  "COEB028": {
+   "name": "皮衣外套",
+   "pc": 12.1387,
+   "lg": 14.0,
+   "ids": [
+    "1732492484437119617"
+   ]
+  },
+  "COBB002": {
+   "name": "毛衣开衫",
+   "pc": 7.0809,
+   "lg": 11.3,
+   "ids": [
+    "1732625145976885889"
+   ]
+  },
+  "COJA038": {
+   "name": "毛绒睡衣",
+   "pc": 12.7168,
+   "lg": 13.0,
+   "ids": [
+    "1732575002694685313"
+   ]
+  },
+  "COHA048": {
+   "name": "格子长裤",
+   "pc": 4.0462,
+   "lg": 9.3,
+   "ids": [
+    "1732490287578124929"
+   ]
+  },
+  "COJA040": {
+   "name": "纯棉条纹套装",
+   "pc": 9.2486,
+   "lg": 12.0,
+   "ids": [
+    "1732752509350154881"
+   ]
+  },
+  "COEB022": {
+   "name": "棉服",
+   "pc": 11.1765,
+   "lg": 11.0,
+   "ids": [
+    "1732603745618268801"
+   ]
+  },
+  "COEB023": {
+   "name": "连帽摇粒绒外套",
+   "pc": 6.8382,
+   "lg": 10.0,
+   "ids": [
+    "1732886019437007489"
+   ]
+  },
+  "COHA057": {
+   "name": "提臀裤",
+   "pc": 5.4412,
+   "lg": 9.3,
+   "ids": [
+    "1732654426331320961"
+   ]
+  }
+ },
+ "nameIndex": {
+  "COOTRY Women's Plus Size Thermal Lined Fleece Activewear Jacket - Full Zip-Up Hoodie, Pockets, Thumbholes, 95% Poly 5% Spandex Flex, Casual Athletic Sports Yoga Jacket, Sporty Breathable Outerwear for Yoga, Running,christmas wishlist inspo": "FY013",
+  "COOTRY Women's Plus Size Moto Biker Leather Jacket - Real & Faux Leather, Lapel Collar, Zipper Front, Long Sleeves, Pocket, Casual Fit, Plus Size Alt Clothing, Trendy Jackets, Dark Look, Solid Colors Fall Outerwear": "COEB028",
+  "COOTRY Women's Plus Size High Waisted Pants - Elastic Waistband, Glute Lifting, Breathable Synthetic Loose-Fitting Yoga Pants with Pockets, Chic 1XL-5XL (3XL,4XL Included) Stretch Flex Bottoms for 2 Seasons Wear": "COHA037",
+  "COOTRY Women’s Plus Size Expandable Zip-Up Activewear Sports Jacket - Lightweight, Breathable, Thumb Holes, 2 Inside Pockets, Layering-Friendly Sporty Outerwear for Workout & Casual Use": "COEB011",
+  "COOTRY Women's Plus Size 2-Piece Pyjamas Set - Longsleeves Chunky V-Neck Top, Full Length Wide Leg Pants, Soft Casual Home Sleepwear & Loungewear, Christmas Gifts": "COJA038",
+  "[HOT] COOTRY Plus Size Ladies' Long Sleeve Slim-Fitting Basic Pullover Shirt - Rayon-Elastane Blend, Soft Stretchy, Breathable Crew Neck, Loose Option, Dress Casual, for Workdays - Women's Clothes, Shirts for Women, Curvy Tops": "COAB035",
+  "COOTRY Plus Size Cozy Oversized Knit Cardigan for Women - Perfect for Layering and Casual Wear, Long Lantern Sleeve Open Front Lightweight For Fall&Winter, 2026 Sweater For Daily Wear, Plus Size Fashion,christmas wishlist": "COBB002",
+  "COOTRY Women's Plus Size 2-Piece Striped Longsleeve Sleepwear & Loungewear Set - Relaxed-Fit Top, Below-Ankle Pants, Machine Washable for Fall Winter (1XL-6XL) | Plus Size Women's Clothing, Pajama Sets,thanksgiving outfits,christmas wishlist inspo": "COJA037",
+  "COOTRY Women's Plus Size Basic 2-Piece Thermal Underwear Set - V-Neck Long Sleeve Tops, Pull On Style, Full Length Elastic Bottoms, Minimalist Solid Matching Thermal Fabric Base Layer for Winter": "COJA001",
+  "COOTRY Women's Plus Size Quilted Puffer Jacket, Boxy Fit Women's Casual Jackets, Long Sleeve Stand Collar Zip Up Splice Lightweight Outerwear Coats - Side Split Hem, Button Cuffs, Pockets, Comfy Fall Outfits, Fat Fashion, Black Friday Christmas Gift": "COEB022",
+  "COOTRY Plus Size Women's Clothing, 1 Piece Basic Simple Style Women's Sherpa Fleece Vest - Sleeveless Loose-Fit Outwear, Oversized Stand Collar, Snap Buttons, Pockets, 2026 Brown, Fall Winter Casual Outwear Pairable with T-Shirt, Jeans, Dress": "COEC001",
+  "Women's Basic Slim Soft Rayon Blend Mock Neck Bodysuit - Thick Stretchy Long Sleeve Fabric Top, Customized Fit, Casual Comfort, Plus Sizes 1XL-2XL, Breathable, Elegant, Machine Washable, Snap Crotch, Button, Attached Bottom": "COLA002",
+  "COOTRY Women's Plus Size Long Sleeve Crew Neck Rayon Blend Basic Blouse - Skinny Fit All Seasons Plus Size Women's Clothing, 2XL Casual Fall Staple Tops": "COAB035",
+  "COOTRY Women's Plus Size 2-in-1 High Rise Shorts for Curvy Women, Elastane Active Bottoms with Flowy Fabric Keeps Cool, Sporty Chic for Tennis & Biking": "COHB034",
+  "COOTRY Women's Plus Size 2-Piece Comfortable Lounge & Pajama Set (1XL-5XL) - Long Sleeve Top with Side Slits, Wide Leg Pants with Soft Drawstring Waist & Pockets for Fall Travel": "COJA025",
+  "COOTRY Plus Size Women's Long Sleeve Scoop Neck Thong Bodysuit - Ultra Stretch, Slim Fit, Button Closure, Adjustable Basic Winter Top - Christmas, Coffee Themed, Stylish Women's Wear, Long Sleeve Tops, Going Out Clothing": "COLA003",
+  "COOTRY Women's Plus Size 2-Piece Cotton Striped Longsleeve Pajama Set - Cozy Homewear, Casual Pajamas & Loungewear, Wide Leg Pants & Top for Relaxation, Loungewear Goals": "COJA040",
+  "COOTRY Plus Size Women's Solid Zip-Front Fleece Jacket - Stand Collar Long-Sleeve Coat with Pockets, Fashion Casual Outerwear Tops (Plus Size Women's Clothing),christmas": "COEB021",
+  "Women's Plus Size Curvy Bodysuit - Crew Neck Long Sleeve, Slim Fit High Stretch Basic Minimalist Casual Top, Soft Rayon Spandex Breathable Fabric, Snap Buttons, Lightweight, Pair with 1XL/2XL Jackets & Cardigans, Plus Size Tops": "COLA017",
+  "COOTRY Women's Plus Size Collared Neck Casual Pullover Sweatshirt - Half-Button Longsleeves, Loose-Fit, Drop Shoulder, Chest Pockets, Curved Hem, Minimalist Fall Daily Wear": "COAB060",
+  "COOTRY Women's Plus Size 2-Piece Striped Longsleeve Sleepwear & Loungewear Set - Relaxed-Fit Top, Below-Ankle Pants, Machine Washable for Fall Winter (1XL-6XL) | Plus Size Women's Clothing, Pajama Sets": "COJA037",
+  "COOTRY Women's Plus Size Thermal Lined Fleece Activewear Jacket - Full Zip-Up Hoodie, Pockets, Thumbholes, 95% Poly 5% Spandex Flex, Casual Athletic Sports Yoga Jacket, Sporty Breathable Outerwear for Yoga, Running": "FY013",
+  "COOTRY Plus Size Women's Solid Zip-Front Fleece Jacket - Stand Collar Long-Sleeve Coat with Pockets, Fashion Casual Outerwear Tops (Plus Size Women's Clothing)": "COEB023"
+ },
+ "days": [
+  {
+   "date": "2026-10-01",
+   "level": "summary",
+   "gmv": 5936.48,
+   "orders": 185,
+   "units": 200,
+   "affRev": 5444.38,
+   "affCom": 565.72,
+   "adRev": 2593.61,
+   "adSpend": 194.0,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 36,
+    "COAB054": 0,
+    "COAB058": 0,
+    "COAB060": 0,
+    "COAB061": 0,
+    "COAB064": 3,
+    "COAB066": 0,
+    "COAA025": 0,
+    "COAB008": 0,
+    "COBB002": 3,
+    "COBB003": 0,
+    "COLA003": 4,
+    "FY019": 1,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA029": 1,
+    "COHA037": 1,
+    "COHA048": 0,
+    "COHA055": 0,
+    "COHA056": 2,
+    "COHA057": 0,
+    "COHB021": 0,
+    "COHB034": 3,
+    "COHB037": 2,
+    "COHB042": 0,
+    "COGA001": 5,
+    "FY013": 14,
+    "COEB011": 85,
+    "COEB012": 0,
+    "COEB021": 0,
+    "COEB022": 0,
+    "COEB007": 1,
+    "COEB017": 1,
+    "COEB028": 0,
+    "COEB030": 0,
+    "COEC001": 2,
+    "COJA001": 0,
+    "COJA025": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 2,
+    "COJA037": 25,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COFC001": 4,
+    "COFC003": 5
+   },
+   "samplesBySku": {
+    "COAB035": 0,
+    "COAA025": 0,
+    "COLA003": 0,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAB054": 0,
+    "COAB058": 0,
+    "COAB060": 0,
+    "COAB064": 0,
+    "COBB002": 0,
+    "COBB003": 0,
+    "COEB012": 0,
+    "COEB017": 0,
+    "COEB021": 0,
+    "COEB022": 0,
+    "COEB028": 0,
+    "COEB030": 0,
+    "COJA025": 0,
+    "COJA037": 0,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COHA037": 0,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA048": 0,
+    "COHA057": 0,
+    "COHA055": 0,
+    "COHA056": 0,
+    "COHB021": 0,
+    "COHB034": 0,
+    "COHB037": 0,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 0,
+    "COEB011": 0,
+    "COEB007": 0,
+    "COEC001": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COFC001": 0,
+    "COFC003": 0
+   },
+   "prodCost": 1302.89,
+   "logiCost": 1654.89,
+   "sampCost": 0.0,
+   "platformFee": 356.19,
+   "payFee": 59.36,
+   "jvFee": 59.36,
+   "refundEst": 593.65,
+   "refundShip": 59.36,
+   "gp": 1091.04,
+   "gpRate": 0.1838
+  },
+  {
+   "date": "2026-10-02",
+   "level": "summary",
+   "gmv": 3942.23,
+   "orders": 108,
+   "units": 128,
+   "affRev": 3599.47,
+   "affCom": 353.09,
+   "adRev": 2304.6,
+   "adSpend": 201.69,
+   "samples": 3,
+   "unitsBySku": {
+    "COAB035": 25,
+    "COAB064": 1,
+    "COBB002": 4,
+    "COLA003": 5,
+    "COHB034": 4,
+    "COHB037": 1,
+    "COGA001": 2,
+    "FY013": 8,
+    "COEB011": 11,
+    "COEB012": 2,
+    "COEB017": 1,
+    "COEB030": 3,
+    "COEC001": 30,
+    "COIA001": 1,
+    "COJA037": 18,
+    "COFC001": 4,
+    "COFC003": 8
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COBB002": 1,
+    "COEB030": 1
+   },
+   "prodCost": 772.53,
+   "logiCost": 1096.02,
+   "sampCost": 29.74,
+   "platformFee": 236.53,
+   "payFee": 39.42,
+   "jvFee": 39.42,
+   "refundEst": 394.22,
+   "refundShip": 39.42,
+   "gp": 740.14,
+   "gpRate": 0.1877
+  },
+  {
+   "date": "2026-10-03",
+   "level": "summary",
+   "gmv": 3143.26,
+   "orders": 90,
+   "units": 102,
+   "affRev": 2907.18,
+   "affCom": 311.89,
+   "adRev": 1837.49,
+   "adSpend": 179.0,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 25,
+    "COAB064": 4,
+    "COBB002": 4,
+    "COLA003": 1,
+    "COHA037": 1,
+    "COHA055": 1,
+    "COHB034": 1,
+    "COHB037": 3,
+    "COGA001": 6,
+    "FY013": 10,
+    "COEB011": 6,
+    "COEB021": 3,
+    "COEB028": 1,
+    "COEC001": 11,
+    "COIA001": 2,
+    "COJA037": 17,
+    "COFC001": 5,
+    "COFC003": 1
+   },
+   "samplesBySku": {},
+   "prodCost": 623.57,
+   "logiCost": 888.72,
+   "sampCost": 0.0,
+   "platformFee": 188.6,
+   "payFee": 31.43,
+   "jvFee": 31.43,
+   "refundEst": 314.33,
+   "refundShip": 31.43,
+   "gp": 542.86,
+   "gpRate": 0.1727
+  },
+  {
+   "date": "2026-10-04",
+   "level": "summary",
+   "gmv": 3433.25,
+   "orders": 104,
+   "units": 114,
+   "affRev": 2963.9,
+   "affCom": 277.73,
+   "adRev": 2477.28,
+   "adSpend": 182.0,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 32,
+    "COAB064": 4,
+    "COBB002": 1,
+    "COLA003": 4,
+    "FY019": 1,
+    "FY020": 2,
+    "COHB034": 2,
+    "COGA001": 1,
+    "FY013": 14,
+    "COEB011": 8,
+    "COEB012": 1,
+    "COEB021": 3,
+    "COEC001": 2,
+    "COJA037": 29,
+    "COFC001": 6,
+    "COFC003": 4
+   },
+   "samplesBySku": {},
+   "prodCost": 708.55,
+   "logiCost": 988.4,
+   "sampCost": 0.0,
+   "platformFee": 206.0,
+   "payFee": 34.33,
+   "jvFee": 34.33,
+   "refundEst": 343.33,
+   "refundShip": 34.33,
+   "gp": 624.25,
+   "gpRate": 0.1818
+  },
+  {
+   "date": "2026-10-05",
+   "level": "summary",
+   "gmv": 3036.82,
+   "orders": 82,
+   "units": 103,
+   "affRev": 2365.82,
+   "affCom": 213.32,
+   "adRev": 1079.64,
+   "adSpend": 183.0,
+   "samples": 7,
+   "unitsBySku": {
+    "COAB035": 24,
+    "COBB002": 4,
+    "COLA003": 3,
+    "FY019": 1,
+    "COHA029": 2,
+    "COHB034": 3,
+    "COHB037": 5,
+    "COGA001": 2,
+    "FY013": 4,
+    "COEB011": 13,
+    "COEB021": 2,
+    "COEB028": 3,
+    "COEB030": 3,
+    "COEC001": 2,
+    "COIA001": 1,
+    "COJA037": 27,
+    "COFC003": 4
+   },
+   "samplesBySku": {
+    "COAB054": 1,
+    "COBB002": 2,
+    "COJA038": 2,
+    "COEB011": 2
+   },
+   "prodCost": 615.61,
+   "logiCost": 868.9,
+   "sampCost": 135.24,
+   "platformFee": 182.21,
+   "payFee": 30.37,
+   "jvFee": 30.37,
+   "refundEst": 303.68,
+   "refundShip": 30.37,
+   "gp": 443.76,
+   "gpRate": 0.1461
+  },
+  {
+   "date": "2026-10-06",
+   "level": "summary",
+   "gmv": 3344.97,
+   "orders": 87,
+   "units": 109,
+   "affRev": 2773.88,
+   "affCom": 280.45,
+   "adRev": 1973.27,
+   "adSpend": 200.14,
+   "samples": 12,
+   "unitsBySku": {
+    "COAB035": 22,
+    "COAB060": 1,
+    "COAB064": 2,
+    "COBB002": 9,
+    "COLA003": 2,
+    "FY020": 1,
+    "COHA056": 2,
+    "COHB037": 2,
+    "COHB042": 1,
+    "COGA001": 1,
+    "FY013": 4,
+    "COEB011": 16,
+    "COEB021": 2,
+    "COEB017": 1,
+    "COEB028": 8,
+    "COEC001": 1,
+    "COJA014": 1,
+    "COIA001": 1,
+    "COJA037": 26,
+    "COFC001": 1,
+    "COFC003": 5
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COBB002": 1,
+    "COBB003": 1,
+    "COEB028": 1,
+    "COJA037": 3,
+    "COJA038": 3,
+    "COHA048": 2
+   },
+   "prodCost": 743.16,
+   "logiCost": 1023.39,
+   "sampCost": 236.96,
+   "platformFee": 200.7,
+   "payFee": 33.45,
+   "jvFee": 33.45,
+   "refundEst": 334.5,
+   "refundShip": 33.45,
+   "gp": 225.32,
+   "gpRate": 0.0674
+  },
+  {
+   "date": "2026-10-07",
+   "level": "summary",
+   "gmv": 4088.57,
+   "orders": 123,
+   "units": 147,
+   "affRev": 3558.39,
+   "affCom": 335.67,
+   "adRev": 3627.45,
+   "adSpend": 252.17,
+   "samples": 6,
+   "unitsBySku": {
+    "COAB035": 49,
+    "COAB064": 2,
+    "COBB002": 16,
+    "COBB003": 1,
+    "COLA003": 2,
+    "FY019": 1,
+    "FY020": 3,
+    "COHA029": 1,
+    "COHA037": 2,
+    "COHA056": 1,
+    "COHB034": 3,
+    "COHB042": 1,
+    "COGA001": 5,
+    "FY013": 6,
+    "COEB011": 12,
+    "COEB021": 2,
+    "COEB028": 5,
+    "COEB030": 1,
+    "COEC001": 2,
+    "COJA037": 20,
+    "COFC001": 2,
+    "COFC003": 10
+   },
+   "samplesBySku": {
+    "COLA003": 1,
+    "COAB064": 1,
+    "COJA038": 2,
+    "COHA048": 1,
+    "COEB011": 1
+   },
+   "prodCost": 869.67,
+   "logiCost": 1282.44,
+   "sampCost": 107.32,
+   "platformFee": 245.31,
+   "payFee": 40.89,
+   "jvFee": 40.89,
+   "refundEst": 408.86,
+   "refundShip": 40.89,
+   "gp": 464.47,
+   "gpRate": 0.1136
+  },
+  {
+   "date": "2026-10-08",
+   "level": "summary",
+   "gmv": 3625.63,
+   "orders": 100,
+   "units": 117,
+   "affRev": 3047.96,
+   "affCom": 283.34,
+   "adRev": 2794.04,
+   "adSpend": 247.0,
+   "samples": 6,
+   "unitsBySku": {
+    "COAB035": 18,
+    "COAB054": 1,
+    "COAB061": 4,
+    "COBB002": 10,
+    "COLA003": 5,
+    "GTBE4628(衬衫)": 1,
+    "COHA037": 3,
+    "COHB034": 1,
+    "COHB037": 1,
+    "COHB042": 1,
+    "COGA001": 4,
+    "FY013": 5,
+    "COEB011": 17,
+    "COEB028": 3,
+    "COEB030": 2,
+    "COEC001": 3,
+    "COIA001": 1,
+    "COJA037": 35,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COBB002": 1,
+    "COJA038": 1,
+    "COHA037": 1,
+    "COHA048": 3
+   },
+   "prodCost": 745.17,
+   "logiCost": 1033.87,
+   "sampCost": 100.87,
+   "platformFee": 217.54,
+   "payFee": 36.26,
+   "jvFee": 36.26,
+   "refundEst": 362.56,
+   "refundShip": 36.26,
+   "gp": 526.51,
+   "gpRate": 0.1452
+  },
+  {
+   "date": "2026-10-09",
+   "level": "summary",
+   "gmv": 3380.37,
+   "orders": 99,
+   "units": 111,
+   "affRev": 2927.56,
+   "affCom": 301.52,
+   "adRev": 2148.93,
+   "adSpend": 248.07,
+   "samples": 1,
+   "unitsBySku": {
+    "COAB035": 28,
+    "COAB060": 3,
+    "COAB061": 3,
+    "COAA025": 1,
+    "COLA003": 2,
+    "COHA037": 1,
+    "COHB034": 2,
+    "COHB037": 5,
+    "FY013": 10,
+    "COEB011": 16,
+    "COEB021": 4,
+    "COEB017": 1,
+    "COEB028": 1,
+    "COEB030": 4,
+    "COEC001": 1,
+    "COJA037": 27,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COHA056": 1
+   },
+   "prodCost": 649.93,
+   "logiCost": 902.2,
+   "sampCost": 17.33,
+   "platformFee": 202.82,
+   "payFee": 33.8,
+   "jvFee": 33.8,
+   "refundEst": 338.04,
+   "refundShip": 33.8,
+   "gp": 619.06,
+   "gpRate": 0.1831
+  },
+  {
+   "date": "2026-10-10",
+   "level": "summary",
+   "gmv": 3693.86,
+   "orders": 109,
+   "units": 124,
+   "affRev": 3069.73,
+   "affCom": 325.77,
+   "adRev": 2985.1,
+   "adSpend": 232.67,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 34,
+    "COAB054": 1,
+    "COAB058": 1,
+    "COAA025": 1,
+    "COBB002": 9,
+    "COLA003": 4,
+    "COHA055": 1,
+    "COHB034": 3,
+    "COHB037": 3,
+    "COGA001": 2,
+    "FY013": 9,
+    "COEB011": 6,
+    "COEB021": 3,
+    "COEB028": 9,
+    "COEB030": 1,
+    "COJA037": 36,
+    "COFC003": 1
+   },
+   "samplesBySku": {},
+   "prodCost": 806.53,
+   "logiCost": 1145.21,
+   "sampCost": 0.0,
+   "platformFee": 221.63,
+   "payFee": 36.94,
+   "jvFee": 36.94,
+   "refundEst": 369.39,
+   "refundShip": 36.94,
+   "gp": 481.85,
+   "gpRate": 0.1304
+  },
+  {
+   "date": "2026-10-11",
+   "level": "summary",
+   "gmv": 4170.38,
+   "orders": 124,
+   "units": 142,
+   "affRev": 3532.19,
+   "affCom": 352.39,
+   "adRev": 3405.71,
+   "adSpend": 242.43,
+   "samples": 4,
+   "unitsBySku": {
+    "COAB035": 33,
+    "COBB002": 4,
+    "COLA003": 7,
+    "FY020": 3,
+    "COHA001": 1,
+    "COHB037": 10,
+    "COHB042": 1,
+    "COGA001": 3,
+    "FY013": 18,
+    "COEB011": 13,
+    "COEB021": 1,
+    "COEB017": 2,
+    "COEB028": 10,
+    "COEB030": 5,
+    "COEC001": 3,
+    "COJA037": 26,
+    "COFC001": 2
+   },
+   "samplesBySku": {
+    "COJA037": 2,
+    "COJA038": 1,
+    "COHA056": 1
+   },
+   "prodCost": 866.82,
+   "logiCost": 1206.19,
+   "sampCost": 81.52,
+   "platformFee": 250.22,
+   "payFee": 41.7,
+   "jvFee": 41.7,
+   "refundEst": 417.04,
+   "refundShip": 41.7,
+   "gp": 628.66,
+   "gpRate": 0.1507
+  },
+  {
+   "date": "2026-10-12",
+   "level": "summary",
+   "gmv": 2630.82,
+   "orders": 82,
+   "units": 89,
+   "affRev": 2264.57,
+   "affCom": 211.43,
+   "adRev": 1943.59,
+   "adSpend": 232.46,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 21,
+    "COAB061": 1,
+    "COBB002": 3,
+    "COBB003": 1,
+    "COLA003": 2,
+    "COHB034": 2,
+    "COHB037": 9,
+    "FY013": 5,
+    "COEB011": 8,
+    "COEB021": 1,
+    "COEB028": 5,
+    "COEB030": 2,
+    "COJA037": 27,
+    "COFC003": 2
+   },
+   "samplesBySku": {},
+   "prodCost": 553.42,
+   "logiCost": 782.0,
+   "sampCost": 0.0,
+   "platformFee": 157.85,
+   "payFee": 26.31,
+   "jvFee": 26.31,
+   "refundEst": 263.08,
+   "refundShip": 26.31,
+   "gp": 351.65,
+   "gpRate": 0.1337
+  },
+  {
+   "date": "2026-10-13",
+   "level": "summary",
+   "gmv": 3000.29,
+   "orders": 89,
+   "units": 98,
+   "affRev": 2467.05,
+   "affCom": 239.24,
+   "adRev": 2756.76,
+   "adSpend": 272.96,
+   "samples": 4,
+   "unitsBySku": {
+    "COAB035": 24,
+    "COAB054": 2,
+    "COAB058": 1,
+    "COAB061": 1,
+    "COBB002": 4,
+    "COHA037": 2,
+    "COGA001": 1,
+    "FY013": 9,
+    "COEB011": 7,
+    "COEB021": 2,
+    "COEB017": 2,
+    "COEB028": 4,
+    "COEB030": 5,
+    "COJA037": 29,
+    "COFC001": 1,
+    "COFC003": 4
+   },
+   "samplesBySku": {
+    "COAB035": 3,
+    "COJA037": 1
+   },
+   "prodCost": 618.58,
+   "logiCost": 858.1,
+   "sampCost": 53.31,
+   "platformFee": 180.02,
+   "payFee": 30.0,
+   "jvFee": 30.0,
+   "refundEst": 300.03,
+   "refundShip": 30.0,
+   "gp": 388.05,
+   "gpRate": 0.1293
+  },
+  {
+   "date": "2026-10-14",
+   "level": "summary",
+   "gmv": 2917.56,
+   "orders": 88,
+   "units": 99,
+   "affRev": 2453.81,
+   "affCom": 239.48,
+   "adRev": 2198.27,
+   "adSpend": 267.4,
+   "samples": 1,
+   "unitsBySku": {
+    "COAB035": 24,
+    "COAB064": 1,
+    "COBB002": 3,
+    "COLA003": 4,
+    "FY020": 1,
+    "COHA037": 1,
+    "COHA056": 1,
+    "COHB034": 4,
+    "COHB037": 2,
+    "COGA001": 1,
+    "FY013": 17,
+    "COEB011": 6,
+    "COEB012": 1,
+    "COEB021": 2,
+    "COEB017": 1,
+    "COEB028": 3,
+    "COEB030": 2,
+    "COJA037": 23,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COEB030": 1
+   },
+   "prodCost": 622.37,
+   "logiCost": 848.39,
+   "sampCost": 0.0,
+   "platformFee": 175.05,
+   "payFee": 29.18,
+   "jvFee": 29.18,
+   "refundEst": 291.76,
+   "refundShip": 29.18,
+   "gp": 385.58,
+   "gpRate": 0.1322
+  },
+  {
+   "date": "2026-10-15",
+   "level": "summary",
+   "gmv": 3421.09,
+   "orders": 99,
+   "units": 118,
+   "affRev": 2766.31,
+   "affCom": 266.93,
+   "adRev": 2578.93,
+   "adSpend": 296.55,
+   "samples": 6,
+   "unitsBySku": {
+    "COAB035": 37,
+    "COAB054": 1,
+    "COAB058": 1,
+    "COAB061": 2,
+    "COBB002": 3,
+    "COLA003": 2,
+    "COAC021": 1,
+    "COHB034": 1,
+    "COHB037": 1,
+    "COGA001": 1,
+    "FY013": 9,
+    "COEB011": 4,
+    "COEB012": 1,
+    "COEB021": 1,
+    "COEB017": 2,
+    "COEB028": 6,
+    "COEB030": 1,
+    "COEC001": 1,
+    "COIA001": 2,
+    "COJA036": 3,
+    "COJA037": 36,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COLA003": 1,
+    "COAB054": 1,
+    "COBB002": 1,
+    "COEB030": 1,
+    "COJA037": 2
+   },
+   "prodCost": 736.13,
+   "logiCost": 1060.3,
+   "sampCost": 84.63,
+   "platformFee": 205.27,
+   "payFee": 34.21,
+   "jvFee": 34.21,
+   "refundEst": 342.11,
+   "refundShip": 34.21,
+   "gp": 326.54,
+   "gpRate": 0.0955
+  },
+  {
+   "date": "2026-10-16",
+   "level": "summary",
+   "gmv": 3758.33,
+   "orders": 110,
+   "units": 132,
+   "affRev": 3132.77,
+   "affCom": 326.99,
+   "adRev": 2549.4,
+   "adSpend": 251.16,
+   "samples": 2,
+   "unitsBySku": {
+    "COAB035": 43,
+    "COAA025": 1,
+    "COBB002": 5,
+    "COLA003": 2,
+    "FY019": 2,
+    "GTBE4628(衬衫)": 1,
+    "COHA037": 3,
+    "COHB034": 2,
+    "COGA001": 2,
+    "FY013": 11,
+    "COEB011": 6,
+    "COEB021": 1,
+    "COEB028": 6,
+    "COEB030": 3,
+    "COJA036": 1,
+    "COJA037": 40,
+    "COFC003": 3
+   },
+   "samplesBySku": {
+    "COBB002": 2
+   },
+   "prodCost": 821.0,
+   "logiCost": 1176.72,
+   "sampCost": 36.76,
+   "platformFee": 225.5,
+   "payFee": 37.58,
+   "jvFee": 37.58,
+   "refundEst": 375.83,
+   "refundShip": 37.58,
+   "gp": 431.62,
+   "gpRate": 0.1148
+  },
+  {
+   "date": "2026-10-17",
+   "level": "summary",
+   "gmv": 3651.31,
+   "orders": 125,
+   "units": 132,
+   "affRev": 2935.49,
+   "affCom": 297.63,
+   "adRev": 3339.94,
+   "adSpend": 255.37,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 33,
+    "COAB058": 3,
+    "COAB061": 2,
+    "COBB002": 4,
+    "COLA003": 3,
+    "FY020": 1,
+    "COAC021": 1,
+    "COHA037": 2,
+    "COHA055": 2,
+    "COHB034": 4,
+    "COHB037": 3,
+    "COGA001": 1,
+    "FY013": 27,
+    "COEB011": 3,
+    "COEB021": 3,
+    "COEB017": 3,
+    "COEB028": 4,
+    "COEB030": 1,
+    "COEC001": 1,
+    "COJA037": 31
+   },
+   "samplesBySku": {},
+   "prodCost": 822.5,
+   "logiCost": 1131.63,
+   "sampCost": 0.0,
+   "platformFee": 219.08,
+   "payFee": 36.51,
+   "jvFee": 36.51,
+   "refundEst": 365.13,
+   "refundShip": 36.51,
+   "gp": 450.43,
+   "gpRate": 0.1234
+  },
+  {
+   "date": "2026-10-18",
+   "level": "summary",
+   "gmv": 2519.93,
+   "orders": 77,
+   "units": 86,
+   "affRev": 2158.65,
+   "affCom": 212.47,
+   "adRev": 1800.67,
+   "adSpend": 276.8,
+   "samples": 4,
+   "unitsBySku": {
+    "COAB035": 22,
+    "COAB058": 1,
+    "COAB064": 1,
+    "COBB002": 8,
+    "COBB003": 1,
+    "COLA003": 4,
+    "FY013": 14,
+    "COEB011": 5,
+    "COEB012": 1,
+    "COEB017": 1,
+    "COEB028": 3,
+    "COEB030": 1,
+    "COEC001": 2,
+    "COJA037": 20,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COJA025": 2,
+    "COJA037": 2
+   },
+   "prodCost": 555.91,
+   "logiCost": 773.23,
+   "sampCost": 38.47,
+   "platformFee": 151.2,
+   "payFee": 25.2,
+   "jvFee": 25.2,
+   "refundEst": 251.99,
+   "refundShip": 25.2,
+   "gp": 184.26,
+   "gpRate": 0.0731
+  },
+  {
+   "date": "2026-10-19",
+   "level": "summary",
+   "gmv": 2313.21,
+   "orders": 67,
+   "units": 79,
+   "affRev": 1810.63,
+   "affCom": 163.07,
+   "adRev": 1699.93,
+   "adSpend": 205.55,
+   "samples": 2,
+   "unitsBySku": {
+    "COAB035": 28,
+    "COAB054": 2,
+    "COAB064": 3,
+    "COBB002": 1,
+    "COLA003": 2,
+    "COHA037": 3,
+    "COHB034": 1,
+    "COHB037": 2,
+    "FY013": 12,
+    "COEB011": 1,
+    "COEB021": 4,
+    "COEB017": 1,
+    "COEB028": 4,
+    "COEB030": 1,
+    "COIA001": 1,
+    "COJA036": 1,
+    "COJA037": 12
+   },
+   "samplesBySku": {
+    "COJA025": 1,
+    "COJA037": 1
+   },
+   "prodCost": 470.77,
+   "logiCost": 678.44,
+   "sampCost": 19.24,
+   "platformFee": 138.79,
+   "payFee": 23.13,
+   "jvFee": 23.13,
+   "refundEst": 231.32,
+   "refundShip": 23.13,
+   "gp": 336.64,
+   "gpRate": 0.1455
+  },
+  {
+   "date": "2026-10-20",
+   "level": "summary",
+   "gmv": 2795.68,
+   "orders": 83,
+   "units": 90,
+   "affRev": 2364.15,
+   "affCom": 216.33,
+   "adRev": 1794.4,
+   "adSpend": 266.07,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 20,
+    "COAB061": 4,
+    "COAA025": 1,
+    "COBB002": 2,
+    "COLA003": 3,
+    "GTBE5919(半裙)": 1,
+    "COHA037": 7,
+    "COHA056": 2,
+    "COHB034": 3,
+    "COHB037": 1,
+    "COGA001": 1,
+    "FY013": 9,
+    "COEB011": 2,
+    "COEB021": 3,
+    "COEB017": 3,
+    "COEB028": 6,
+    "COEB030": 2,
+    "COJA037": 20
+   },
+   "samplesBySku": {},
+   "prodCost": 558.03,
+   "logiCost": 782.82,
+   "sampCost": 0.0,
+   "platformFee": 167.74,
+   "payFee": 27.96,
+   "jvFee": 27.96,
+   "refundEst": 279.57,
+   "refundShip": 27.96,
+   "gp": 441.24,
+   "gpRate": 0.1578
+  },
+  {
+   "date": "2026-10-21",
+   "level": "summary",
+   "gmv": 2353.99,
+   "orders": 59,
+   "units": 78,
+   "affRev": 1873.83,
+   "affCom": 162.6,
+   "adRev": 1936.96,
+   "adSpend": 246.91,
+   "samples": 11,
+   "unitsBySku": {
+    "COAB035": 19,
+    "COAB058": 1,
+    "COAB064": 1,
+    "COBB002": 1,
+    "COLA003": 1,
+    "FY020": 3,
+    "COAC021": 1,
+    "COHA037": 4,
+    "COHB034": 3,
+    "COHB037": 1,
+    "FY013": 9,
+    "COEB011": 4,
+    "COEB021": 1,
+    "COEB028": 1,
+    "COEB030": 1,
+    "COJA037": 25,
+    "COFC001": 1,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "GTBA62(短袖)": 1,
+    "COEB030": 1,
+    "COJA037": 7,
+    "COHA056": 1,
+    "FY013": 1
+   },
+   "prodCost": 489.29,
+   "logiCost": 687.05,
+   "sampCost": 177.44,
+   "platformFee": 141.24,
+   "payFee": 23.54,
+   "jvFee": 23.54,
+   "refundEst": 235.4,
+   "refundShip": 23.54,
+   "gp": 143.44,
+   "gpRate": 0.0609
+  },
+  {
+   "date": "2026-10-22",
+   "level": "summary",
+   "gmv": 3367.88,
+   "orders": 102,
+   "units": 114,
+   "affRev": 2882.52,
+   "affCom": 292.23,
+   "adRev": 2441.21,
+   "adSpend": 261.09,
+   "samples": 2,
+   "unitsBySku": {
+    "COAB035": 29,
+    "COBB002": 3,
+    "COLA003": 4,
+    "COHA037": 4,
+    "COHB034": 1,
+    "COHB037": 4,
+    "FY013": 20,
+    "COEB011": 12,
+    "COEB021": 3,
+    "COEB017": 2,
+    "COEB028": 2,
+    "COEB030": 3,
+    "COJA037": 27
+   },
+   "samplesBySku": {
+    "COJA037": 2
+   },
+   "prodCost": 707.38,
+   "logiCost": 966.93,
+   "sampCost": 38.47,
+   "platformFee": 202.07,
+   "payFee": 33.68,
+   "jvFee": 33.68,
+   "refundEst": 336.79,
+   "refundShip": 33.68,
+   "gp": 461.87,
+   "gpRate": 0.1371
+  },
+  {
+   "date": "2026-10-23",
+   "level": "summary",
+   "gmv": 2416.66,
+   "orders": 74,
+   "units": 79,
+   "affRev": 2015.62,
+   "affCom": 166.74,
+   "adRev": 1978.48,
+   "adSpend": 247.98,
+   "samples": 1,
+   "unitsBySku": {
+    "COAB035": 18,
+    "COAB064": 2,
+    "COBB002": 2,
+    "COLA003": 4,
+    "COHA037": 2,
+    "COHB034": 1,
+    "COHB037": 2,
+    "COHB042": 1,
+    "FY013": 10,
+    "COEB011": 4,
+    "COEB012": 1,
+    "COEB028": 2,
+    "COJA037": 26,
+    "COFC001": 2,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COHA048": 1
+   },
+   "prodCost": 516.53,
+   "logiCost": 719.24,
+   "sampCost": 13.35,
+   "platformFee": 145.0,
+   "payFee": 24.17,
+   "jvFee": 24.17,
+   "refundEst": 241.67,
+   "refundShip": 24.17,
+   "gp": 293.65,
+   "gpRate": 0.1215
+  },
+  {
+   "date": "2026-10-24",
+   "level": "summary",
+   "gmv": 3232.59,
+   "orders": 101,
+   "units": 116,
+   "affRev": 2534.7,
+   "affCom": 238.39,
+   "adRev": 1794.76,
+   "adSpend": 263.99,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 37,
+    "COAB058": 1,
+    "COAB060": 1,
+    "COAB061": 3,
+    "COBB002": 1,
+    "COLA003": 4,
+    "GTBA62(短袖)": 2,
+    "COHA037": 5,
+    "COHA056": 1,
+    "COHB034": 8,
+    "COHB037": 5,
+    "COGA001": 1,
+    "FY013": 11,
+    "COEB012": 1,
+    "COEB021": 1,
+    "COEB030": 2,
+    "COJA037": 31,
+    "COFC003": 1
+   },
+   "samplesBySku": {},
+   "prodCost": 644.49,
+   "logiCost": 959.73,
+   "sampCost": 0.0,
+   "platformFee": 193.96,
+   "payFee": 32.33,
+   "jvFee": 32.33,
+   "refundEst": 323.26,
+   "refundShip": 32.33,
+   "gp": 511.79,
+   "gpRate": 0.1583
+  },
+  {
+   "date": "2026-10-25",
+   "level": "summary",
+   "gmv": 2768.95,
+   "orders": 82,
+   "units": 91,
+   "affRev": 2265.82,
+   "affCom": 197.16,
+   "adRev": 2059.88,
+   "adSpend": 252.72,
+   "samples": 4,
+   "unitsBySku": {
+    "COAB035": 24,
+    "COAB060": 2,
+    "COAB061": 2,
+    "COLA003": 3,
+    "COHA056": 1,
+    "COHB034": 1,
+    "COHB042": 2,
+    "FY013": 15,
+    "COEB011": 3,
+    "COEB021": 1,
+    "COEB028": 2,
+    "COEB030": 1,
+    "COIA001": 1,
+    "COJA037": 32,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COEB028": 1,
+    "COJA037": 2,
+    "COHA037": 1
+   },
+   "prodCost": 575.45,
+   "logiCost": 792.23,
+   "sampCost": 81.34,
+   "platformFee": 166.14,
+   "payFee": 27.69,
+   "jvFee": 27.69,
+   "refundEst": 276.89,
+   "refundShip": 27.69,
+   "gp": 343.94,
+   "gpRate": 0.1242
+  },
+  {
+   "date": "2026-10-26",
+   "level": "summary",
+   "gmv": 1960.95,
+   "orders": 55,
+   "units": 69,
+   "affRev": 1520.54,
+   "affCom": 138.27,
+   "adRev": 1328.43,
+   "adSpend": 204.74,
+   "samples": 8,
+   "unitsBySku": {
+    "COAB035": 17,
+    "COAB058": 2,
+    "COAB061": 4,
+    "COAB064": 1,
+    "COLA003": 2,
+    "COHA055": 1,
+    "COHB034": 4,
+    "COHB037": 6,
+    "COGA001": 1,
+    "FY013": 5,
+    "COEB021": 1,
+    "COEB028": 1,
+    "COIA001": 1,
+    "COJA037": 20,
+    "COFC001": 2,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COLA003": 1,
+    "COJA037": 3,
+    "COJA038": 1,
+    "COHA001": 1,
+    "FY013": 1
+   },
+   "prodCost": 384.64,
+   "logiCost": 565.56,
+   "sampCost": 133.34,
+   "platformFee": 117.66,
+   "payFee": 19.61,
+   "jvFee": 19.61,
+   "refundEst": 196.1,
+   "refundShip": 19.61,
+   "gp": 161.82,
+   "gpRate": 0.0825
+  },
+  {
+   "date": "2026-10-27",
+   "level": "summary",
+   "gmv": 2033.96,
+   "orders": 59,
+   "units": 75,
+   "affRev": 1764.03,
+   "affCom": 186.56,
+   "adRev": 1222.69,
+   "adSpend": 237.0,
+   "samples": 10,
+   "unitsBySku": {
+    "COAB035": 24,
+    "COAB058": 1,
+    "COAB061": 1,
+    "COAB064": 1,
+    "COHB034": 1,
+    "COHB037": 5,
+    "FY013": 8,
+    "COEB011": 5,
+    "COEB021": 3,
+    "COEB028": 2,
+    "COEB030": 1,
+    "COEC001": 1,
+    "COIA001": 2,
+    "COJA037": 18,
+    "COFC001": 1,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COBB002": 2,
+    "COBB003": 1,
+    "COEB012": 2,
+    "COJA040": 2,
+    "COHA057": 1,
+    "FY013": 1
+   },
+   "prodCost": 436.84,
+   "logiCost": 626.51,
+   "sampCost": 177.17,
+   "platformFee": 122.04,
+   "payFee": 20.34,
+   "jvFee": 20.34,
+   "refundEst": 203.4,
+   "refundShip": 20.34,
+   "gp": -16.56,
+   "gpRate": -0.0081
+  },
+  {
+   "date": "2026-10-28",
+   "level": "summary",
+   "gmv": 3068.62,
+   "orders": 79,
+   "units": 102,
+   "affRev": 2223.94,
+   "affCom": 218.85,
+   "adRev": 2006.87,
+   "adSpend": 252.0,
+   "samples": 14,
+   "unitsBySku": {
+    "COAB035": 22,
+    "COAB054": 0,
+    "COAB058": 0,
+    "COAB060": 0,
+    "COAB061": 4,
+    "COAB064": 0,
+    "COAB066": 0,
+    "COAA025": 0,
+    "COAB008": 0,
+    "COBB002": 1,
+    "COBB003": 0,
+    "COLA003": 4,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 1,
+    "GTBE5919(半裙)": 0,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA029": 0,
+    "COHA037": 2,
+    "COHA048": 0,
+    "COHA055": 0,
+    "COHA056": 1,
+    "COHA057": 0,
+    "COHB021": 0,
+    "COHB034": 3,
+    "COHB037": 5,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 13,
+    "COEB011": 4,
+    "COEB012": 0,
+    "COEB021": 7,
+    "COEB022": 0,
+    "COEB007": 0,
+    "COEB017": 2,
+    "COEB028": 1,
+    "COEB030": 0,
+    "COEC001": 0,
+    "COJA001": 0,
+    "COJA025": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 2,
+    "COJA037": 29,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COFC001": 1,
+    "COFC003": 0
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COAA025": 0,
+    "COLA003": 0,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAB054": 0,
+    "COAB058": 0,
+    "COAB060": 0,
+    "COAB064": 0,
+    "COBB002": 0,
+    "COBB003": 1,
+    "COEB012": 1,
+    "COEB017": 0,
+    "COEB021": 0,
+    "COEB022": 0,
+    "COEB028": 3,
+    "COEB030": 0,
+    "COJA025": 0,
+    "COJA037": 3,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COHA037": 2,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA048": 0,
+    "COHA057": 0,
+    "COHA055": 0,
+    "COHA056": 1,
+    "COHB021": 0,
+    "COHB034": 0,
+    "COHB037": 0,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 0,
+    "COEB011": 2,
+    "COEB007": 0,
+    "COEC001": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COFC001": 0,
+    "COFC003": 0
+   },
+   "prodCost": 618.57,
+   "logiCost": 863.09,
+   "sampCost": 267.22,
+   "platformFee": 184.12,
+   "payFee": 30.69,
+   "jvFee": 30.69,
+   "refundEst": 306.86,
+   "refundShip": 30.69,
+   "gp": 265.85,
+   "gpRate": 0.0866
+  },
+  {
+   "date": "2026-10-29",
+   "level": "summary",
+   "gmv": 2590.24,
+   "orders": 81,
+   "units": 87,
+   "affRev": 2181.5,
+   "affCom": 220.42,
+   "adRev": 1818.16,
+   "adSpend": 218.0,
+   "samples": 4,
+   "unitsBySku": {
+    "COAB035": 29,
+    "COAB054": 0,
+    "COAB058": 1,
+    "COAB060": 0,
+    "COAB061": 1,
+    "COAB064": 0,
+    "COAB066": 0,
+    "COAA025": 0,
+    "COAB008": 0,
+    "COBB002": 0,
+    "COBB003": 0,
+    "COLA003": 3,
+    "FY019": 0,
+    "FY020": 1,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA029": 0,
+    "COHA037": 3,
+    "COHA048": 0,
+    "COHA055": 0,
+    "COHA056": 0,
+    "COHA057": 0,
+    "COHB021": 0,
+    "COHB034": 2,
+    "COHB037": 1,
+    "COHB042": 0,
+    "COGA001": 2,
+    "FY013": 10,
+    "COEB011": 1,
+    "COEB012": 0,
+    "COEB021": 1,
+    "COEB022": 0,
+    "COEB007": 0,
+    "COEB017": 0,
+    "COEB028": 2,
+    "COEB030": 0,
+    "COEC001": 0,
+    "COJA001": 0,
+    "COJA025": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COJA037": 28,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COFC001": 1,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COAB035": 0,
+    "COAA025": 0,
+    "COLA003": 0,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAB054": 0,
+    "COAB058": 0,
+    "COAB060": 0,
+    "COAB064": 0,
+    "COBB002": 0,
+    "COBB003": 0,
+    "COEB012": 0,
+    "COEB017": 0,
+    "COEB021": 0,
+    "COEB022": 0,
+    "COEB028": 1,
+    "COEB030": 0,
+    "COJA025": 0,
+    "COJA037": 1,
+    "COJA038": 0,
+    "COJA040": 1,
+    "COHA037": 0,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA048": 1,
+    "COHA057": 0,
+    "COHA055": 0,
+    "COHA056": 0,
+    "COHB021": 0,
+    "COHB034": 0,
+    "COHB037": 0,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 0,
+    "COEB011": 0,
+    "COEB007": 0,
+    "COEC001": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COFC001": 0,
+    "COFC003": 0
+   },
+   "prodCost": 528.92,
+   "logiCost": 764.22,
+   "sampCost": 79.97,
+   "platformFee": 155.41,
+   "payFee": 25.9,
+   "jvFee": 25.9,
+   "refundEst": 259.02,
+   "refundShip": 25.9,
+   "gp": 286.56,
+   "gpRate": 0.1106
+  },
+  {
+   "date": "2026-10-30",
+   "level": "summary",
+   "gmv": 3235.65,
+   "orders": 99,
+   "units": 116,
+   "affRev": 2255.35,
+   "affCom": 235.9,
+   "adRev": 1786.95,
+   "adSpend": 257.42,
+   "samples": 1,
+   "unitsBySku": {
+    "COAB035": 53,
+    "COAB054": 0,
+    "COAB058": 3,
+    "COAB060": 0,
+    "COAB061": 3,
+    "COAB064": 0,
+    "COAB066": 0,
+    "COAA025": 0,
+    "COAB008": 0,
+    "COBB002": 0,
+    "COBB003": 0,
+    "COLA003": 0,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 1,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 2,
+    "COHA029": 0,
+    "COHA037": 1,
+    "COHA048": 0,
+    "COHA055": 0,
+    "COHA056": 0,
+    "COHA057": 0,
+    "COHB021": 0,
+    "COHB034": 1,
+    "COHB037": 5,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 8,
+    "COEB011": 5,
+    "COEB012": 4,
+    "COEB021": 7,
+    "COEB022": 0,
+    "COEB007": 0,
+    "COEB017": 0,
+    "COEB028": 3,
+    "COEB030": 0,
+    "COEC001": 0,
+    "COJA001": 0,
+    "COJA025": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COJA037": 20,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COFC001": 0,
+    "COFC003": 0
+   },
+   "samplesBySku": {
+    "COAB035": 0,
+    "COAA025": 0,
+    "COLA003": 0,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAB054": 0,
+    "COAB058": 0,
+    "COAB060": 0,
+    "COAB064": 0,
+    "COBB002": 0,
+    "COBB003": 0,
+    "COEB012": 0,
+    "COEB017": 0,
+    "COEB021": 0,
+    "COEB022": 0,
+    "COEB028": 0,
+    "COEB030": 0,
+    "COJA025": 0,
+    "COJA037": 0,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COHA037": 0,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA048": 0,
+    "COHA057": 0,
+    "COHA055": 0,
+    "COHA056": 0,
+    "COHB021": 0,
+    "COHB034": 0,
+    "COHB037": 0,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 1,
+    "COEB011": 0,
+    "COEB007": 0,
+    "COEC001": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COFC001": 0,
+    "COFC003": 0
+   },
+   "prodCost": 626.18,
+   "logiCost": 962.29,
+   "sampCost": 14.51,
+   "platformFee": 194.14,
+   "payFee": 32.36,
+   "jvFee": 32.36,
+   "refundEst": 323.57,
+   "refundShip": 32.36,
+   "gp": 524.57,
+   "gpRate": 0.1621
+  },
+  {
+   "date": "2026-10-31",
+   "level": "summary",
+   "gmv": 2177.81,
+   "orders": 57,
+   "units": 72,
+   "affRev": 1723.64,
+   "affCom": 163.62,
+   "adRev": 1321.15,
+   "adSpend": 212.0,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 21,
+    "COAB054": 3,
+    "COAB058": 3,
+    "COAB060": 0,
+    "COAB061": 1,
+    "COAB064": 1,
+    "COAB066": 0,
+    "COAA025": 0,
+    "COAB008": 0,
+    "COBB002": 0,
+    "COBB003": 0,
+    "COLA003": 0,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAC005": 0,
+    "COAC021": 1,
+    "COHA001": 0,
+    "COHA029": 0,
+    "COHA037": 1,
+    "COHA048": 0,
+    "COHA055": 2,
+    "COHA056": 7,
+    "COHA057": 0,
+    "COHB021": 0,
+    "COHB034": 0,
+    "COHB037": 1,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 4,
+    "COEB011": 1,
+    "COEB012": 0,
+    "COEB021": 2,
+    "COEB022": 0,
+    "COEB007": 0,
+    "COEB017": 0,
+    "COEB028": 0,
+    "COEB030": 1,
+    "COEC001": 0,
+    "COJA001": 0,
+    "COJA025": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COJA037": 23,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COFC001": 0,
+    "COFC003": 0
+   },
+   "samplesBySku": {
+    "COAB035": 0,
+    "COAA025": 0,
+    "COLA003": 0,
+    "FY019": 0,
+    "FY020": 0,
+    "GTBA265(背心)": 0,
+    "GTBE4628(衬衫)": 0,
+    "GTBA62(短袖)": 0,
+    "GTBE5919(半裙)": 0,
+    "COAB054": 0,
+    "COAB058": 0,
+    "COAB060": 0,
+    "COAB064": 0,
+    "COBB002": 0,
+    "COBB003": 0,
+    "COEB012": 0,
+    "COEB017": 0,
+    "COEB021": 0,
+    "COEB022": 0,
+    "COEB028": 0,
+    "COEB030": 0,
+    "COJA025": 0,
+    "COJA037": 0,
+    "COJA038": 0,
+    "COJA040": 0,
+    "COHA037": 0,
+    "COAC005": 0,
+    "COAC021": 0,
+    "COHA001": 0,
+    "COHA048": 0,
+    "COHA057": 0,
+    "COHA055": 0,
+    "COHA056": 0,
+    "COHB021": 0,
+    "COHB034": 0,
+    "COHB037": 0,
+    "COHB042": 0,
+    "COGA001": 0,
+    "FY013": 0,
+    "COEB011": 0,
+    "COEB007": 0,
+    "COEC001": 0,
+    "COJA014": 0,
+    "COIA001": 0,
+    "COJA036": 0,
+    "COFC001": 0,
+    "COFC003": 0
+   },
+   "prodCost": 433.37,
+   "logiCost": 643.04,
+   "sampCost": 0.0,
+   "platformFee": 130.67,
+   "payFee": 21.78,
+   "jvFee": 21.78,
+   "refundEst": 217.78,
+   "refundShip": 21.78,
+   "gp": 312.0,
+   "gpRate": 0.1433
+  },
+  {
+   "date": "2026-11-01",
+   "level": "summary",
+   "gmv": 2341.41,
+   "orders": 57,
+   "units": 75,
+   "affRev": 1883.69,
+   "affCom": 211.79,
+   "adRev": 1425.29,
+   "adSpend": 252.22,
+   "samples": 8,
+   "unitsBySku": {
+    "COAB035": 20,
+    "COAB058": 2,
+    "COAB061": 4,
+    "COAB064": 1,
+    "COHA037": 1,
+    "COHA056": 1,
+    "COHB021": 1,
+    "COHB034": 3,
+    "FY013": 4,
+    "COEB021": 1,
+    "COEB028": 1,
+    "COEC001": 1,
+    "COJA037": 34,
+    "COJA040": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COAB064": 1,
+    "COEB021": 1,
+    "COJA037": 2,
+    "COHA048": 3
+   },
+   "prodCost": 469.81,
+   "logiCost": 671.68,
+   "sampCost": 120.23,
+   "platformFee": 140.48,
+   "payFee": 23.41,
+   "jvFee": 23.41,
+   "refundEst": 234.14,
+   "refundShip": 23.41,
+   "gp": 170.81,
+   "gpRate": 0.073
+  },
+  {
+   "date": "2026-11-02",
+   "level": "summary",
+   "gmv": 3436.68,
+   "orders": 90,
+   "units": 111,
+   "affRev": 2509.69,
+   "affCom": 238.58,
+   "adRev": 1963.12,
+   "adSpend": 202.0,
+   "samples": 3,
+   "unitsBySku": {
+    "COAB035": 34,
+    "COAB061": 2,
+    "COLA003": 2,
+    "COHA037": 3,
+    "COHA056": 5,
+    "COHB034": 1,
+    "COHB037": 1,
+    "FY013": 5,
+    "COEB011": 6,
+    "COEB021": 5,
+    "COEB022": 1,
+    "COEB028": 3,
+    "COEB030": 1,
+    "COJA025": 3,
+    "COJA036": 1,
+    "COJA037": 37,
+    "COJA040": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COJA037": 2
+   },
+   "prodCost": 680.48,
+   "logiCost": 972.22,
+   "sampCost": 49.83,
+   "platformFee": 206.2,
+   "payFee": 34.37,
+   "jvFee": 34.37,
+   "refundEst": 343.67,
+   "refundShip": 34.37,
+   "gp": 640.6,
+   "gpRate": 0.1864
+  },
+  {
+   "date": "2026-11-03",
+   "level": "summary",
+   "gmv": 2703.39,
+   "orders": 67,
+   "units": 85,
+   "affRev": 2281.39,
+   "affCom": 207.46,
+   "adRev": 1862.54,
+   "adSpend": 203.59,
+   "samples": 8,
+   "unitsBySku": {
+    "COAB035": 15,
+    "COAB054": 1,
+    "COAB061": 4,
+    "COLA003": 2,
+    "FY020": 2,
+    "COHA037": 1,
+    "COHA056": 6,
+    "COHB037": 2,
+    "FY013": 6,
+    "COEB011": 7,
+    "COEB021": 3,
+    "COEB028": 1,
+    "COEB030": 1,
+    "COJA037": 32,
+    "COJA040": 1,
+    "COFC001": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COEB022": 2,
+    "COJA037": 1,
+    "COJA040": 1,
+    "COHA037": 1,
+    "COHA048": 1,
+    "COHA057": 1
+   },
+   "prodCost": 541.59,
+   "logiCost": 745.57,
+   "sampCost": 141.01,
+   "platformFee": 162.2,
+   "payFee": 27.03,
+   "jvFee": 27.03,
+   "refundEst": 270.34,
+   "refundShip": 27.03,
+   "gp": 350.52,
+   "gpRate": 0.1297
+  },
+  {
+   "date": "2026-11-04",
+   "level": "summary",
+   "gmv": 1761.19,
+   "orders": 39,
+   "units": 62,
+   "affRev": 1381.59,
+   "affCom": 138.8,
+   "adRev": 1553.23,
+   "adSpend": 231.0,
+   "samples": 12,
+   "unitsBySku": {
+    "COAB035": 31,
+    "COAB054": 1,
+    "COAB058": 2,
+    "COLA003": 1,
+    "COHA056": 4,
+    "COHB037": 1,
+    "FY013": 2,
+    "COEB011": 4,
+    "COEB021": 10,
+    "COEB017": 1,
+    "COEB030": 1,
+    "COJA037": 4
+   },
+   "samplesBySku": {
+    "COAB035": 2,
+    "COJA037": 6,
+    "COJA040": 1,
+    "COHA048": 2,
+    "COEB011": 1
+   },
+   "prodCost": 314.58,
+   "logiCost": 496.88,
+   "sampCost": 201.35,
+   "platformFee": 105.67,
+   "payFee": 17.61,
+   "jvFee": 17.61,
+   "refundEst": 176.12,
+   "refundShip": 17.61,
+   "gp": 43.95,
+   "gpRate": 0.025
+  },
+  {
+   "date": "2026-11-05",
+   "level": "summary",
+   "gmv": 2278.8,
+   "orders": 66,
+   "units": 84,
+   "affRev": 1836.69,
+   "affCom": 190.42,
+   "adRev": 1578.78,
+   "adSpend": 205.0,
+   "samples": 7,
+   "unitsBySku": {
+    "COAB035": 36,
+    "COAB061": 1,
+    "COBB002": 1,
+    "COHA037": 4,
+    "COHB037": 2,
+    "FY013": 1,
+    "COEB011": 3,
+    "COEB021": 3,
+    "COEB028": 2,
+    "COJA037": 28,
+    "COJA040": 2,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COEB030": 1,
+    "COJA037": 2,
+    "COJA040": 2,
+    "COHA037": 1
+   },
+   "prodCost": 501.92,
+   "logiCost": 762.29,
+   "sampCost": 109.06,
+   "platformFee": 136.73,
+   "payFee": 22.79,
+   "jvFee": 22.79,
+   "refundEst": 227.88,
+   "refundShip": 22.79,
+   "gp": 77.14,
+   "gpRate": 0.0338
+  },
+  {
+   "date": "2026-11-06",
+   "level": "summary",
+   "gmv": 2899.55,
+   "orders": 85,
+   "units": 95,
+   "affRev": 1807.24,
+   "affCom": 167.07,
+   "adRev": 1893.98,
+   "adSpend": 243.0,
+   "samples": 3,
+   "unitsBySku": {
+    "COAB035": 23,
+    "COAB061": 3,
+    "COBB002": 1,
+    "GTBA62(短袖)": 2,
+    "COHA037": 2,
+    "COHA056": 6,
+    "COHB034": 1,
+    "COHB037": 1,
+    "FY013": 6,
+    "COEB011": 3,
+    "COEB021": 6,
+    "COEB017": 1,
+    "COEB028": 1,
+    "COEB030": 1,
+    "COEC001": 2,
+    "COJA025": 1,
+    "COJA037": 32,
+    "COJA038": 2,
+    "COJA040": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COJA037": 2
+   },
+   "prodCost": 602.1,
+   "logiCost": 843.42,
+   "sampCost": 49.83,
+   "platformFee": 173.97,
+   "payFee": 29.0,
+   "jvFee": 29.0,
+   "refundEst": 289.96,
+   "refundShip": 29.0,
+   "gp": 443.22,
+   "gpRate": 0.1529
+  },
+  {
+   "date": "2026-11-07",
+   "level": "summary",
+   "gmv": 2940.98,
+   "orders": 91,
+   "units": 103,
+   "affRev": 1854.57,
+   "affCom": 175.5,
+   "adRev": 2357.74,
+   "adSpend": 244.85,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 35,
+    "COAB058": 1,
+    "COAB061": 2,
+    "COBB002": 1,
+    "COLA003": 1,
+    "FY020": 2,
+    "COHA037": 3,
+    "COHA056": 1,
+    "COHB034": 2,
+    "COGA001": 1,
+    "FY013": 10,
+    "COEB011": 5,
+    "COEB021": 1,
+    "COEB017": 1,
+    "COEB028": 1,
+    "COEC001": 2,
+    "COJA025": 1,
+    "COIA001": 1,
+    "COJA037": 28,
+    "COJA038": 1,
+    "COJA040": 3
+   },
+   "samplesBySku": {},
+   "prodCost": 621.76,
+   "logiCost": 894.9,
+   "sampCost": 0.0,
+   "platformFee": 176.46,
+   "payFee": 29.41,
+   "jvFee": 29.41,
+   "refundEst": 294.1,
+   "refundShip": 29.41,
+   "gp": 445.19,
+   "gpRate": 0.1514
+  },
+  {
+   "date": "2026-11-08",
+   "level": "summary",
+   "gmv": 3318.25,
+   "orders": 80,
+   "units": 112,
+   "affRev": 1886.19,
+   "affCom": 204.55,
+   "adRev": 2215.87,
+   "adSpend": 219.51,
+   "samples": 15,
+   "unitsBySku": {
+    "COAB035": 23,
+    "COAB054": 1,
+    "COAB058": 1,
+    "COAB061": 1,
+    "COBB002": 3,
+    "COLA003": 3,
+    "COHA037": 4,
+    "COHA048": 8,
+    "COGA001": 1,
+    "FY013": 3,
+    "COEB011": 1,
+    "COEB012": 6,
+    "COEB021": 9,
+    "COEB022": 2,
+    "COEB017": 1,
+    "COEB028": 1,
+    "COEB030": 1,
+    "COEC001": 4,
+    "COJA001": 1,
+    "COJA025": 2,
+    "COIA001": 1,
+    "COJA036": 1,
+    "COJA037": 23,
+    "COJA038": 1,
+    "COJA040": 9,
+    "COFC001": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COLA003": 2,
+    "COAB058": 1,
+    "COEB021": 1,
+    "COEB022": 1,
+    "COEB028": 1,
+    "COJA037": 2,
+    "COJA040": 1,
+    "COHA037": 4,
+    "COHA048": 1
+   },
+   "prodCost": 694.91,
+   "logiCost": 1025.97,
+   "sampCost": 248.07,
+   "platformFee": 199.09,
+   "payFee": 33.18,
+   "jvFee": 33.18,
+   "refundEst": 331.83,
+   "refundShip": 33.18,
+   "gp": 294.77,
+   "gpRate": 0.0888
+  },
+  {
+   "date": "2026-11-09",
+   "level": "summary",
+   "gmv": 2586.38,
+   "orders": 76,
+   "units": 89,
+   "affRev": 1436.14,
+   "affCom": 147.54,
+   "adRev": 2033.3,
+   "adSpend": 205.0,
+   "samples": 7,
+   "unitsBySku": {
+    "COAB035": 17,
+    "COAB054": 2,
+    "COAB061": 3,
+    "COAB064": 1,
+    "COBB002": 5,
+    "COLA003": 1,
+    "GTBE4628(衬衫)": 1,
+    "COHA037": 3,
+    "COHA048": 1,
+    "COHA056": 3,
+    "COHB034": 1,
+    "FY013": 4,
+    "COEB011": 4,
+    "COEB021": 9,
+    "COEB028": 1,
+    "COEB030": 1,
+    "COEC001": 7,
+    "COJA025": 2,
+    "COJA037": 12,
+    "COJA038": 1,
+    "COJA040": 10
+   },
+   "samplesBySku": {
+    "COLA003": 1,
+    "COEB022": 2,
+    "COJA025": 1,
+    "COJA037": 3
+   },
+   "prodCost": 556.33,
+   "logiCost": 783.72,
+   "sampCost": 113.34,
+   "platformFee": 155.18,
+   "payFee": 25.86,
+   "jvFee": 25.86,
+   "refundEst": 258.64,
+   "refundShip": 25.86,
+   "gp": 289.04,
+   "gpRate": 0.1118
+  },
+  {
+   "date": "2026-11-10",
+   "level": "summary",
+   "gmv": 2591.18,
+   "orders": 72,
+   "units": 88,
+   "affRev": 1828.14,
+   "affCom": 173.81,
+   "adRev": 1992.24,
+   "adSpend": 192.0,
+   "samples": 11,
+   "unitsBySku": {
+    "COAB035": 22,
+    "COAB054": 1,
+    "COAB061": 4,
+    "COAB064": 1,
+    "COBB002": 3,
+    "COBB003": 1,
+    "COHA037": 3,
+    "COHA048": 1,
+    "FY013": 8,
+    "COEB011": 5,
+    "COEB021": 8,
+    "COEB022": 2,
+    "COEB028": 2,
+    "COEB030": 1,
+    "COEC001": 5,
+    "COJA025": 1,
+    "COIA001": 1,
+    "COJA037": 14,
+    "COJA040": 3,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COLA003": 1,
+    "COBB002": 2,
+    "COEB017": 2,
+    "COEB030": 1,
+    "COJA037": 2,
+    "COJA040": 1,
+    "COHA056": 1
+   },
+   "prodCost": 533.47,
+   "logiCost": 741.52,
+   "sampCost": 174.5,
+   "platformFee": 155.47,
+   "payFee": 25.91,
+   "jvFee": 25.91,
+   "refundEst": 259.12,
+   "refundShip": 25.91,
+   "gp": 283.56,
+   "gpRate": 0.1094
+  },
+  {
+   "date": "2026-11-11",
+   "level": "summary",
+   "gmv": 2832.75,
+   "orders": 81,
+   "units": 102,
+   "affRev": 1911.8,
+   "affCom": 204.38,
+   "adRev": 1765.43,
+   "adSpend": 198.03,
+   "samples": 10,
+   "unitsBySku": {
+    "COAB035": 22,
+    "COAB058": 1,
+    "COAB061": 1,
+    "COBB002": 4,
+    "COBB003": 1,
+    "COLA003": 5,
+    "GTBE4628(衬衫)": 1,
+    "COHA037": 1,
+    "COHA048": 2,
+    "COHA056": 2,
+    "FY013": 5,
+    "COEB011": 9,
+    "COEB012": 3,
+    "COEB021": 4,
+    "COEB028": 2,
+    "COEC001": 12,
+    "COJA025": 4,
+    "COIA001": 1,
+    "COJA036": 1,
+    "COJA037": 18,
+    "COJA040": 2,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COLA003": 1,
+    "COBB002": 1,
+    "COEB021": 1,
+    "COEB022": 1,
+    "COJA037": 2,
+    "COGA001": 1,
+    "COEC001": 2
+   },
+   "prodCost": 612.25,
+   "logiCost": 882.98,
+   "sampCost": 160.38,
+   "platformFee": 169.97,
+   "payFee": 28.33,
+   "jvFee": 28.33,
+   "refundEst": 283.28,
+   "refundShip": 28.33,
+   "gp": 236.5,
+   "gpRate": 0.0835
+  },
+  {
+   "date": "2026-11-12",
+   "level": "summary",
+   "gmv": 4381.26,
+   "orders": 140,
+   "units": 172,
+   "affRev": 3768.92,
+   "affCom": 432.35,
+   "adRev": 3223.91,
+   "adSpend": 238.86,
+   "samples": 12,
+   "unitsBySku": {
+    "COAB035": 50,
+    "COAB058": 5,
+    "COAB064": 5,
+    "COBB002": 4,
+    "COBB003": 1,
+    "COLA003": 4,
+    "FY020": 2,
+    "COHA037": 3,
+    "COHA048": 1,
+    "COHA056": 3,
+    "COHB037": 2,
+    "FY013": 5,
+    "COEB011": 6,
+    "COEB021": 5,
+    "COEB017": 1,
+    "COEB028": 4,
+    "COEC001": 41,
+    "COJA025": 3,
+    "COIA001": 2,
+    "COJA037": 21,
+    "COJA040": 3,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COBB002": 1,
+    "COEB022": 1,
+    "COEB028": 1,
+    "COJA025": 1,
+    "COJA040": 4,
+    "COHA048": 2,
+    "COHA056": 1,
+    "COEB011": 1
+   },
+   "prodCost": 997.33,
+   "logiCost": 1510.92,
+   "sampCost": 210.98,
+   "platformFee": 262.88,
+   "payFee": 43.81,
+   "jvFee": 43.81,
+   "refundEst": 438.13,
+   "refundShip": 43.81,
+   "gp": 158.39,
+   "gpRate": 0.0362
+  },
+  {
+   "date": "2026-11-13",
+   "level": "summary",
+   "gmv": 4552.96,
+   "orders": 149,
+   "units": 161,
+   "affRev": 3561.88,
+   "affCom": 374.24,
+   "adRev": 3268.31,
+   "adSpend": 271.65,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 37,
+    "COAB061": 4,
+    "COAB064": 1,
+    "COBB002": 1,
+    "COLA003": 8,
+    "COHA037": 4,
+    "COHA048": 1,
+    "COHB034": 4,
+    "COHB042": 1,
+    "FY013": 5,
+    "COEB011": 9,
+    "COEB012": 1,
+    "COEB021": 10,
+    "COEB028": 5,
+    "COEB030": 5,
+    "COEC001": 29,
+    "COJA025": 3,
+    "COIA001": 3,
+    "COJA036": 1,
+    "COJA037": 26,
+    "COJA040": 1,
+    "COFC001": 1,
+    "COFC003": 1
+   },
+   "samplesBySku": {},
+   "prodCost": 917.73,
+   "logiCost": 1331.09,
+   "sampCost": 0.0,
+   "platformFee": 273.18,
+   "payFee": 45.53,
+   "jvFee": 45.53,
+   "refundEst": 455.3,
+   "refundShip": 45.53,
+   "gp": 793.19,
+   "gpRate": 0.1742
+  },
+  {
+   "date": "2026-11-14",
+   "level": "summary",
+   "gmv": 5152.33,
+   "orders": 165,
+   "units": 193,
+   "affRev": 4131.88,
+   "affCom": 449.52,
+   "adRev": 3396.22,
+   "adSpend": 300.93,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 59,
+    "COAB054": 1,
+    "COAB058": 1,
+    "COAB061": 5,
+    "COAB066": 1,
+    "COAA025": 3,
+    "COBB002": 1,
+    "COBB003": 1,
+    "COLA003": 9,
+    "GTBE4628(衬衫)": 1,
+    "GTBA62(短袖)": 1,
+    "COHA037": 4,
+    "COHA048": 1,
+    "COHA056": 2,
+    "COHB034": 1,
+    "FY013": 4,
+    "COEB011": 4,
+    "COEB012": 1,
+    "COEB021": 12,
+    "COEB022": 2,
+    "COEB017": 1,
+    "COEB028": 5,
+    "COEC001": 25,
+    "COJA025": 1,
+    "COIA001": 5,
+    "COJA037": 39,
+    "COJA040": 3
+   },
+   "samplesBySku": {},
+   "prodCost": 1113.93,
+   "logiCost": 1671.02,
+   "sampCost": 0.0,
+   "platformFee": 309.14,
+   "payFee": 51.52,
+   "jvFee": 51.52,
+   "refundEst": 515.23,
+   "refundShip": 51.52,
+   "gp": 637.99,
+   "gpRate": 0.1238
+  },
+  {
+   "date": "2026-11-15",
+   "level": "summary",
+   "gmv": 4360.09,
+   "orders": 143,
+   "units": 150,
+   "affRev": 3493.9,
+   "affCom": 374.03,
+   "adRev": 2993.83,
+   "adSpend": 323.44,
+   "samples": 0,
+   "unitsBySku": {
+    "COAB035": 34,
+    "COAB061": 1,
+    "COAB066": 1,
+    "COBB002": 5,
+    "COLA003": 8,
+    "COHA001": 1,
+    "COHA037": 5,
+    "COHA056": 4,
+    "COHA057": 1,
+    "FY013": 5,
+    "COEB011": 8,
+    "COEB021": 5,
+    "COEB017": 1,
+    "COEB028": 6,
+    "COEB030": 2,
+    "COEC001": 21,
+    "COJA025": 3,
+    "COJA037": 35,
+    "COJA040": 4
+   },
+   "samplesBySku": {},
+   "prodCost": 934.49,
+   "logiCost": 1346.28,
+   "sampCost": 0.0,
+   "platformFee": 261.61,
+   "payFee": 43.6,
+   "jvFee": 43.6,
+   "refundEst": 436.01,
+   "refundShip": 43.6,
+   "gp": 553.43,
+   "gpRate": 0.1269
+  },
+  {
+   "date": "2026-11-16",
+   "level": "summary",
+   "gmv": 2816.57,
+   "orders": 87,
+   "units": 105,
+   "samples": 11,
+   "affRev": 2120.3,
+   "affCom": 236.02,
+   "adRev": 1686.54,
+   "adSpend": 262.0,
+   "prodCost": 601.95,
+   "logiCost": 915.46,
+   "sampCost": 122.88,
+   "platformFee": 168.99,
+   "payFee": 28.17,
+   "jvFee": 28.17,
+   "refundEst": 281.66,
+   "refundShip": 28.17,
+   "gp": 143.11,
+   "gpRate": 0.0508,
+   "source": "seed",
+   "unitsBySku": {
+    "COAB035": 41,
+    "COAB058": 1,
+    "COAB061": 2,
+    "COBB002": 1,
+    "COLA003": 5,
+    "COHA048": 1,
+    "COHA056": 1,
+    "COGA001": 2,
+    "FY013": 2,
+    "COEB011": 2,
+    "COEB021": 5,
+    "COEB028": 4,
+    "COEC001": 13,
+    "COJA025": 1,
+    "COJA037": 23,
+    "COJA038": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COEB021": 1,
+    "COEB022": 1,
+    "COJA001": 2,
+    "COJA025": 2,
+    "COJA037": 2,
+    "COJA040": 1,
+    "COEB011": 1
+   },
+   "gpCalc": 143.11
+  },
+  {
+   "date": "2026-11-17",
+   "level": "summary",
+   "gmv": 4014.88,
+   "orders": 117,
+   "units": 141,
+   "samples": 16,
+   "affRev": 2921.42,
+   "affCom": 308.92,
+   "adRev": 1824.18,
+   "adSpend": 242.0,
+   "prodCost": 832.99,
+   "logiCost": 1197.19,
+   "sampCost": 270.72,
+   "platformFee": 240.89,
+   "payFee": 40.15,
+   "jvFee": 40.15,
+   "refundEst": 401.49,
+   "refundShip": 40.15,
+   "gp": 400.23,
+   "gpRate": 0.0997,
+   "source": "seed",
+   "unitsBySku": {
+    "COAB035": 35,
+    "COAB061": 3,
+    "COBB003": 2,
+    "COLA003": 8,
+    "COHA037": 2,
+    "COHA056": 2,
+    "COHB037": 1,
+    "FY013": 4,
+    "COEB011": 6,
+    "COEB012": 2,
+    "COEB021": 8,
+    "COEB028": 5,
+    "COEB030": 3,
+    "COEC001": 17,
+    "COJA001": 3,
+    "COJA025": 3,
+    "COIA001": 1,
+    "COJA037": 24,
+    "COJA038": 1,
+    "COJA040": 10,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COLA003": 1,
+    "COAB054": 1,
+    "COBB002": 1,
+    "COEB021": 1,
+    "COEB022": 2,
+    "COJA037": 4,
+    "COHA037": 1,
+    "COHA057": 1,
+    "FY013": 1,
+    "COEC001": 2
+   },
+   "gpCalc": 400.23
+  },
+  {
+   "date": "2026-11-18",
+   "level": "summary",
+   "gmv": 3263.87,
+   "orders": 99,
+   "units": 119,
+   "samples": 9,
+   "affRev": 2595.38,
+   "affCom": 271.98,
+   "adRev": 2714.71,
+   "adSpend": 215.99,
+   "prodCost": 692.54,
+   "logiCost": 1020.18,
+   "sampCost": 109.73,
+   "platformFee": 195.83,
+   "payFee": 32.64,
+   "jvFee": 32.64,
+   "refundEst": 326.39,
+   "refundShip": 32.64,
+   "gp": 333.31,
+   "gpRate": 0.1021,
+   "source": "seed",
+   "unitsBySku": {
+    "COAB035": 30,
+    "COAB054": 3,
+    "COAB058": 1,
+    "COAB061": 2,
+    "COBB002": 3,
+    "COLA003": 2,
+    "COHA037": 1,
+    "COHA048": 2,
+    "COHA056": 1,
+    "COHB034": 1,
+    "COHB037": 2,
+    "COGA001": 1,
+    "FY013": 2,
+    "COEB011": 5,
+    "COEB012": 1,
+    "COEB021": 3,
+    "COEB028": 3,
+    "COEB030": 4,
+    "COEC001": 14,
+    "COJA025": 4,
+    "COJA037": 27,
+    "COJA040": 6,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COLA003": 2,
+    "COEB028": 1,
+    "COEB030": 2,
+    "COHA057": 2,
+    "COEC001": 2
+   },
+   "gpCalc": 333.31
+  },
+  {
+   "date": "2026-11-19",
+   "level": "summary",
+   "gmv": 4535.26,
+   "orders": 145,
+   "units": 168,
+   "samples": 6,
+   "affRev": 3342.35,
+   "affCom": 370.01,
+   "adRev": 3993.92,
+   "adSpend": 291.05,
+   "prodCost": 1032.3,
+   "logiCost": 1479.15,
+   "sampCost": 64.22,
+   "platformFee": 272.12,
+   "payFee": 45.35,
+   "jvFee": 45.35,
+   "refundEst": 453.53,
+   "refundShip": 45.35,
+   "gp": 436.83,
+   "gpRate": 0.0963,
+   "source": "seed",
+   "unitsBySku": {
+    "COAB035": 44,
+    "COAB058": 2,
+    "COBB002": 1,
+    "COBB003": 1,
+    "COLA003": 7,
+    "COHA037": 4,
+    "COHA056": 5,
+    "COHB034": 3,
+    "COHB037": 1,
+    "COGA001": 1,
+    "FY013": 13,
+    "COEB011": 4,
+    "COEB012": 1,
+    "COEB021": 8,
+    "COEB022": 2,
+    "COEB028": 3,
+    "COEB030": 2,
+    "COEC001": 27,
+    "COJA001": 1,
+    "COJA025": 1,
+    "COIA001": 1,
+    "COJA037": 18,
+    "COJA040": 16,
+    "COFC003": 2
+   },
+   "samplesBySku": {
+    "COAB035": 1,
+    "COEB012": 1,
+    "COEB030": 1,
+    "COJA001": 1,
+    "COJA037": 1,
+    "COHA057": 1
+   },
+   "gpCalc": 436.83
+  },
+  {
+   "date": "2026-11-20",
+   "level": "summary",
+   "gmv": 5221.68,
+   "orders": 172,
+   "units": 193,
+   "samples": 1,
+   "affRev": 4037.52,
+   "affCom": 467.68,
+   "adRev": 3193.72,
+   "adSpend": 287.16,
+   "prodCost": 1238.66,
+   "logiCost": 1738.7,
+   "sampCost": 15.27,
+   "platformFee": 313.3,
+   "payFee": 52.22,
+   "jvFee": 52.22,
+   "refundEst": 522.17,
+   "refundShip": 52.22,
+   "gp": 482.09,
+   "gpRate": 0.0923,
+   "source": "seed",
+   "unitsBySku": {
+    "COAB035": 54,
+    "COAB058": 3,
+    "COBB002": 4,
+    "COBB003": 1,
+    "COLA003": 7,
+    "COHA037": 6,
+    "COHB037": 2,
+    "COGA001": 3,
+    "FY013": 28,
+    "COEB011": 4,
+    "COEB012": 2,
+    "COEB021": 7,
+    "COEB022": 1,
+    "COEB017": 2,
+    "COEB028": 8,
+    "COEC001": 12,
+    "COJA001": 1,
+    "COJA025": 1,
+    "COJA037": 28,
+    "COJA040": 18,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COEB011": 1
+   },
+   "gpCalc": 482.09
+  },
+  {
+   "date": "2026-11-21",
+   "level": "summary",
+   "gmv": 3964.98,
+   "orders": 134,
+   "units": 149,
+   "samples": 0,
+   "affRev": 3476.62,
+   "affCom": 345.68,
+   "adRev": 3608.74,
+   "adSpend": 338.35,
+   "prodCost": 869.45,
+   "logiCost": 1266.12,
+   "sampCost": 0.0,
+   "platformFee": 237.9,
+   "payFee": 39.65,
+   "jvFee": 39.65,
+   "refundEst": 396.5,
+   "refundShip": 39.65,
+   "gp": 392.04,
+   "gpRate": 0.0989,
+   "source": "seed",
+   "unitsBySku": {
+    "COAB035": 44,
+    "COAB061": 1,
+    "COBB002": 1,
+    "COLA003": 14,
+    "COHA037": 3,
+    "COHA048": 1,
+    "COHA056": 4,
+    "COHA057": 1,
+    "COHB034": 1,
+    "COHB037": 2,
+    "FY013": 15,
+    "COEB011": 2,
+    "COEB021": 9,
+    "COEB022": 1,
+    "COEB028": 5,
+    "COEC001": 16,
+    "COJA001": 3,
+    "COJA025": 1,
+    "COJA037": 17,
+    "COJA040": 8
+   },
+   "samplesBySku": {},
+   "gpCalc": 392.03
+  },
+  {
+   "date": "2026-11-22",
+   "level": "summary",
+   "gmv": 3941.28,
+   "orders": 120,
+   "units": 137,
+   "samples": 8,
+   "affRev": 3246.41,
+   "affCom": 329.11,
+   "adRev": 3414.33,
+   "adSpend": 329.77,
+   "prodCost": 870.73,
+   "logiCost": 1217.34,
+   "sampCost": 87.21,
+   "platformFee": 236.48,
+   "payFee": 39.41,
+   "jvFee": 39.41,
+   "refundEst": 394.13,
+   "refundShip": 39.41,
+   "gp": 358.27,
+   "gpRate": 0.0909,
+   "source": "seed",
+   "unitsBySku": {
+    "COAB035": 38,
+    "COAB061": 1,
+    "COBB002": 3,
+    "COLA003": 6,
+    "COHA001": 2,
+    "COHA037": 4,
+    "COHA048": 1,
+    "COGA001": 1,
+    "FY013": 21,
+    "COEB011": 2,
+    "COEB021": 1,
+    "COEB022": 2,
+    "COEB028": 6,
+    "COEB030": 2,
+    "COEC001": 11,
+    "COIA001": 1,
+    "COJA037": 28,
+    "COJA040": 6,
+    "COFC003": 1
+   },
+   "samplesBySku": {
+    "COAB035": 4,
+    "COLA003": 2,
+    "COJA001": 1,
+    "COJA037": 1
+   },
+   "gpCalc": 358.28
+  },
+  {
+   "date": "2026-11-23",
+   "level": "detail",
+   "gmv": 4152.43,
+   "orders": 129,
+   "units": 143,
+   "samples": 6,
+   "affRev": 3223.1,
+   "affCom": 326.94,
+   "adRev": 3629.93,
+   "adSpend": 333.81,
+   "adOrders": 0,
+   "adUnmatched": 0.0,
+   "adInferred": 7.83,
+   "adInferredPids": [
+    "1732492484437185153",
+    "1732778886056219265"
+   ],
+   "affRefund": 588.16,
+   "prodCost": 885.26,
+   "logiCost": 1200.13,
+   "sampCost": 95.68,
+   "platformFee": 249.15,
+   "payFee": 41.52,
+   "jvFee": 41.52,
+   "refundEst": 415.24,
+   "refundShip": 41.52,
+   "gp": 521.65,
+   "gpRate": 0.1256,
+   "products": [
+    {
+     "sku": "FY013",
+     "name": "连帽夹克",
+     "units": 20,
+     "paid": 19,
+     "samples": 1,
+     "rev": 562.12,
+     "adSpend": 46.54,
+     "adRev": 591.11,
+     "com": 48.56,
+     "affRev": 475.9,
+     "gp": 69.96,
+     "gpRate": 0.1245,
+     "prodCost": 140.85,
+     "logiCost": 134.9,
+     "sampCost": 14.51,
+     "missingCost": false
+    },
+    {
+     "sku": "COEB028",
+     "name": "皮衣外套",
+     "units": 8,
+     "paid": 8,
+     "samples": 0,
+     "rev": 361.92,
+     "adSpend": 16.71,
+     "adRev": 361.92,
+     "com": 23.6,
+     "affRev": 210.85,
+     "gp": 43.74,
+     "gpRate": 0.1209,
+     "prodCost": 97.11,
+     "logiCost": 112.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COHA037",
+     "name": "喇叭裤",
+     "units": 11,
+     "paid": 11,
+     "samples": 0,
+     "rev": 324.89,
+     "adSpend": 20.19,
+     "adRev": 265.91,
+     "com": 28.58,
+     "affRev": 294.9,
+     "gp": 30.35,
+     "gpRate": 0.0934,
+     "prodCost": 69.94,
+     "logiCost": 114.1,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COEB011",
+     "name": "拉链夹克",
+     "units": 9,
+     "paid": 9,
+     "samples": 0,
+     "rev": 284.22,
+     "adSpend": 11.76,
+     "adRev": 221.24,
+     "com": 28.98,
+     "affRev": 280.32,
+     "gp": 52.05,
+     "gpRate": 0.1831,
+     "prodCost": 66.33,
+     "logiCost": 71.1,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COJA038",
+     "name": "毛绒睡衣",
+     "units": 2,
+     "paid": 0,
+     "samples": 2,
+     "rev": 0.0,
+     "adSpend": 0.5,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": -51.93,
+     "gpRate": 0,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 51.43,
+     "missingCost": false
+    },
+    {
+     "sku": "COAB035",
+     "name": "基础长袖",
+     "units": 33,
+     "paid": 32,
+     "samples": 1,
+     "rev": 635.52,
+     "adSpend": 61.71,
+     "adRev": 675.5,
+     "com": 49.06,
+     "affRev": 493.66,
+     "gp": 29.21,
+     "gpRate": 0.046,
+     "prodCost": 120.23,
+     "logiCost": 243.2,
+     "sampCost": 11.36,
+     "missingCost": false
+    },
+    {
+     "sku": "COBB002",
+     "name": "毛衣开衫",
+     "units": 1,
+     "paid": 0,
+     "samples": 1,
+     "rev": 0.0,
+     "adSpend": 10.12,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": -28.5,
+     "gpRate": 0,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 18.38,
+     "missingCost": false
+    },
+    {
+     "sku": "COJA037",
+     "name": "长袖条纹套装",
+     "units": 16,
+     "paid": 16,
+     "samples": 0,
+     "rev": 616.04,
+     "adSpend": 54.65,
+     "adRev": 383.0,
+     "com": 32.37,
+     "affRev": 328.69,
+     "gp": 104.18,
+     "gpRate": 0.1691,
+     "prodCost": 131.79,
+     "logiCost": 176.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COJA001",
+     "name": "COJA001",
+     "units": 2,
+     "paid": 2,
+     "samples": 0,
+     "rev": 61.98,
+     "adSpend": 0.0,
+     "adRev": 0.0,
+     "com": 2.9,
+     "affRev": 28.99,
+     "gp": 47.3,
+     "gpRate": 0.7631,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 0.0,
+     "missingCost": true
+    },
+    {
+     "sku": "COEB022",
+     "name": "棉服",
+     "units": 2,
+     "paid": 2,
+     "samples": 0,
+     "rev": 90.98,
+     "adSpend": 16.68,
+     "adRev": 178.96,
+     "com": 4.6,
+     "affRev": 45.99,
+     "gp": 8.06,
+     "gpRate": 0.0886,
+     "prodCost": 22.35,
+     "logiCost": 22.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COEC001",
+     "name": "摇粒绒马甲",
+     "units": 14,
+     "paid": 14,
+     "samples": 0,
+     "rev": 440.31,
+     "adSpend": 32.01,
+     "adRev": 440.31,
+     "com": 43.3,
+     "affRev": 434.61,
+     "gp": 60.41,
+     "gpRate": 0.1372,
+     "prodCost": 90.03,
+     "logiCost": 130.9,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COLA002",
+     "name": "COLA002",
+     "units": 1,
+     "paid": 1,
+     "samples": 0,
+     "rev": 25.99,
+     "adSpend": 0.0,
+     "adRev": 0.0,
+     "com": 2.6,
+     "affRev": 25.99,
+     "gp": 18.45,
+     "gpRate": 0.7099,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 0.0,
+     "missingCost": true
+    },
+    {
+     "sku": "COHB034",
+     "name": "蝴蝶短裤",
+     "units": 3,
+     "paid": 3,
+     "samples": 0,
+     "rev": 77.54,
+     "adSpend": 0.0,
+     "adRev": 0.0,
+     "com": 7.8,
+     "affRev": 77.54,
+     "gp": 16.19,
+     "gpRate": 0.2088,
+     "prodCost": 17.82,
+     "logiCost": 21.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COJA025",
+     "name": "COJA025",
+     "units": 3,
+     "paid": 2,
+     "samples": 1,
+     "rev": 70.5,
+     "adSpend": 4.43,
+     "adRev": 70.5,
+     "com": 3.5,
+     "affRev": 34.99,
+     "gp": 49.17,
+     "gpRate": 0.6974,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 0.0,
+     "missingCost": true
+    },
+    {
+     "sku": "COLA003",
+     "name": "方领连体衣",
+     "units": 2,
+     "paid": 2,
+     "samples": 0,
+     "rev": 38.98,
+     "adSpend": 0.0,
+     "adRev": 0.0,
+     "com": 3.9,
+     "affRev": 38.72,
+     "gp": 5.12,
+     "gpRate": 0.1313,
+     "prodCost": 7.95,
+     "logiCost": 14.6,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COJA040",
+     "name": "纯棉条纹套装",
+     "units": 8,
+     "paid": 8,
+     "samples": 0,
+     "rev": 313.52,
+     "adSpend": 28.02,
+     "adRev": 313.52,
+     "com": 33.72,
+     "affRev": 300.92,
+     "gp": 22.22,
+     "gpRate": 0.0709,
+     "prodCost": 73.99,
+     "logiCost": 96.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COEB021",
+     "name": "摇粒绒外套",
+     "units": 4,
+     "paid": 4,
+     "samples": 0,
+     "rev": 127.96,
+     "adSpend": 25.93,
+     "adRev": 127.96,
+     "com": 13.47,
+     "affRev": 151.03,
+     "gp": 6.82,
+     "gpRate": 0.0533,
+     "prodCost": 25.43,
+     "logiCost": 32.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COLA017",
+     "name": "COLA017",
+     "units": 1,
+     "paid": 1,
+     "samples": 0,
+     "rev": 20.99,
+     "adSpend": 0.0,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": 17.0,
+     "gpRate": 0.8099,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 0.0,
+     "missingCost": true
+    },
+    {
+     "sku": "COAB060",
+     "name": "套头衫",
+     "units": 2,
+     "paid": 2,
+     "samples": 0,
+     "rev": 65.98,
+     "adSpend": 0.0,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": 16.51,
+     "gpRate": 0.2502,
+     "prodCost": 14.6,
+     "logiCost": 22.33,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COEB023",
+     "name": "连帽摇粒绒外套",
+     "units": 1,
+     "paid": 1,
+     "samples": 0,
+     "rev": 32.99,
+     "adSpend": 0.0,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": 9.88,
+     "gpRate": 0.2995,
+     "prodCost": 6.84,
+     "logiCost": 10.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COHA056",
+     "name": "九分裤",
+     "units": 0,
+     "paid": 0,
+     "samples": 0,
+     "rev": 0.0,
+     "adSpend": 2.99,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": -2.99,
+     "gpRate": 0,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COBB003",
+     "name": "条纹开衫",
+     "units": 0,
+     "paid": 0,
+     "samples": 0,
+     "rev": 0.0,
+     "adSpend": 1.32,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": -1.32,
+     "gpRate": 0,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    },
+    {
+     "sku": "COAB054",
+     "name": "半拉链摇粒绒卫衣",
+     "units": 0,
+     "paid": 0,
+     "samples": 0,
+     "rev": 0.0,
+     "adSpend": 0.25,
+     "adRev": 0.0,
+     "com": 0.0,
+     "affRev": 0.0,
+     "gp": -0.25,
+     "gpRate": 0,
+     "prodCost": 0.0,
+     "logiCost": 0.0,
+     "sampCost": 0.0,
+     "missingCost": false
+    }
+   ],
+   "source": "seed"
+  }
+ ],
+ "idMap": {
+  "1731390301187773057": "COAB035",
+  "1732177347924103809": "COAB035",
+  "1731384993167479425": "COHA001",
+  "1731131707582485121": "COHB034",
+  "1732183375477052033": "COAC005",
+  "1731136293788881537": "COEB011",
+  "1731507675208389249": "COLA003",
+  "1732165433739285121": "COHB037",
+  "1732183285335888513": "FY020",
+  "1731385594322850433": "COAB001",
+  "1731070556085523073": "COGA001",
+  "1731797225511424641": "FY013",
+  "1731090625251283585": "COEB007",
+  "1732252745161740929": "COJA036",
+  "1732252794835145345": "COJA014",
+  "1729489779516216961": "COFC003",
+  "1731100075799450241": "COHB021",
+  "1732509580232790657": "FY019",
+  "1732306721058427521": "COAA025",
+  "1732405462682210945": "COHB042",
+  "1732339088258863745": "COAC021",
+  "1731136201872937601": "COFC001",
+  "1732453017045406337": "COJA037",
+  "1732453069718721153": "COAB058",
+  "1732534366125527681": "COAB060",
+  "1732536391816090241": "COAB061",
+  "1732456431938343553": "COEB021",
+  "1732452995035075201": "COHA037",
+  "1732461725845852801": "COEB017",
+  "1732596078502646401": "COAB054",
+  "1731757793204343425": "COEB012",
+  "1732575002694816385": "COAB064",
+  "1732575127362638465": "COEC001",
+  "1732575008206787201": "COBB003",
+  "1732536809045660289": "COHA055",
+  "1732536918723170945": "COHA056",
+  "1732492484437119617": "COEB028",
+  "1732625145976885889": "COBB002",
+  "1732575002694685313": "COJA038",
+  "1732490287578124929": "COHA048",
+  "1732752509350154881": "COJA040",
+  "1732603745618268801": "COEB022",
+  "1732886019437007489": "COEB023",
+  "1732654426331320961": "COHA057"
+ }
+};</script>
+<script>/* ============ COOTRY 每日报数看板 ============ */
+(function () {
+  'use strict';
+
+  var LS_KEY = 'cootry_daily_v2';
+  var DATA = window.__DATA__;
+  var COST = DATA.cost;
+  var IDMAP = DATA.idMap || {};          // 商品ID -> SPU
+  var MONTH_DAYS = 30;
+
+  function costOf(sku) { return store.cost[sku] || COST[sku] || {}; }
+  function costKeys() {
+    var k = {};
+    Object.keys(COST).forEach(function (x) { k[x] = 1; });
+    Object.keys(store.cost).forEach(function (x) { k[x] = 1; });
+    return Object.keys(k);
+  }
+
+  /* ---------- 状态（云端数据库为主，本地 localStorage 作离线缓存兜底） ---------- */
+  var store = { added: {}, deleted: [], cost: {} };
+  var dayMap = {};
+  var allDays = [];                 // 升序
+  var current = null;               // 当前日期字符串
+  var chartMetric = 'gmv';
+  var chartRange = 'recent';
+  var sortKey = 'rev';
+  var sortDir = -1;
+  var keyword = '';
+  var prodTab = 'day';          // day | range
+  var rangeStart = null, rangeEnd = null;
+  var persistTimer = null;
+
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        var o = JSON.parse(raw);
+        return { added: o.added || {}, deleted: o.deleted || [], cost: o.cost || {} };
+      }
+    } catch (e) { }
+    return { added: {}, deleted: [], cost: {} };
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) { }
+  }
+  async function fetchState() {
+    try {
+      var r = await fetch('/api/state');
+      if (!r.ok) throw new Error('http ' + r.status);
+      var o = await r.json();
+      store.added = o.added || {};
+      store.deleted = o.deleted || [];
+      store.cost = o.cost || {};
+    } catch (e) {
+      var local = loadLocal();
+      store.added = local.added; store.deleted = local.deleted; store.cost = local.cost;
+    }
+    saveLocal();
+  }
+  function saveStore() {
+    saveLocal();
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(persistState, 400);
+  }
+  async function persistState() {
+    try {
+      await fetch('/api/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store)
+      });
+    } catch (e) { }
+  }
+
+  function rebuild() {
+    dayMap = {};
+    DATA.days.forEach(function (d) { dayMap[d.date] = d; });
+    Object.keys(store.added).forEach(function (k) { dayMap[k] = store.added[k]; });
+    store.deleted.forEach(function (k) { delete dayMap[k]; });
+    allDays = Object.keys(dayMap).sort();
+  }
+
+  /* ---------- 工具 ---------- */
+  function num(x) { var n = parseFloat(x); return isFinite(n) ? n : 0; }
+  function rnd2(x) { return Math.round((num(x) + (x >= 0 ? 1e-6 : -1e-6)) * 100) / 100; }
+  function money(n, dec) {
+    if (n === null || n === undefined || !isFinite(n)) return '—';
+    dec = dec === undefined ? 2 : dec;
+    var body = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    return (n < 0 ? '-$' : '$') + body;
+  }
+  function int(n) { return (n === null || n === undefined) ? '—' : Math.round(n).toLocaleString('en-US'); }
+  function pct(n, dec) {
+    if (!isFinite(n)) return '—';
+    return (n * 100).toFixed(dec === undefined ? 1 : dec) + '%';
+  }
+  function signedMoney(n) { return (n >= 0 ? '+' : '') + money(n); }
+  function signedPct(n) { return (n >= 0 ? '+' : '') + pct(n); }
+  function dLabel(s) { return s.slice(5).replace('-', '/'); }
+  function wd(s) {
+    return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][new Date(s + 'T00:00:00').getDay()];
+  }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ---------- 派生指标 ---------- */
+  function derive(d) {
+    var gmv = num(d.gmv);
+    var adSpend = num(d.adSpend), adRev = num(d.adRev);
+    var affCom = num(d.affCom), affRev = num(d.affRev);
+    var prodCost = num(d.prodCost), logiCost = num(d.logiCost), sampCost = num(d.sampCost);
+    var jv = gmv * 0.01, payFee = gmv * 0.01, platform = gmv * 0.06;
+    var refund = gmv * 0.10, refundShip = gmv * 0.01;
+    var marketing = affCom + adSpend + jv;
+    var gp = rnd2(gmv - prodCost - logiCost - sampCost - affCom - adSpend - (jv + payFee + platform + refund + refundShip));
+    return {
+      gmv: gmv,
+      orders: num(d.orders),
+      units: num(d.units),
+      paidUnits: Math.max(0, num(d.units) - num(d.samples)),
+      samples: num(d.samples),
+      adSpend: adSpend, adRev: adRev,
+      affCom: affCom, affRev: affRev,
+      prodCost: prodCost, logiCost: logiCost, sampCost: sampCost,
+      jv: jv, payFee: payFee, platform: platform, refund: refund, refundShip: refundShip,
+      marketing: marketing,
+      gp: gp,
+      gpRate: gmv ? gp / gmv : 0,
+      aov: d.orders ? gmv / d.orders : 0,
+      adRoi: adSpend ? adRev / adSpend : 0,
+      affRoi: affCom ? affRev / affCom : 0,
+      totalRoi: marketing ? gmv / marketing : 0,
+      adRevShare: gmv ? adRev / gmv : 0,
+      affRevShare: gmv ? affRev / gmv : 0,
+      adCostRate: gmv ? adSpend / gmv : 0,
+      affCostRate: gmv ? affCom / gmv : 0,
+      grossCosts: prodCost + logiCost + sampCost
+    };
+  }
+
+  function prevOf(date) {
+    var idx = allDays.indexOf(date);
+    if (idx <= 0) return null;
+    return dayMap[allDays[idx - 1]];
+  }
+  function prevDetailOf(date) {
+    var idx = allDays.indexOf(date);
+    for (var i = idx - 1; i >= 0; i--) {
+      if (dayMap[allDays[i]].level === 'detail' && dayMap[allDays[i]].products) return dayMap[allDays[i]];
+    }
+    return null;
+  }
+  function delta(cur, prev, unit) {
+    if (!prev || !prev.value) return { text: '—', cls: 'flat', abs: '' };
+    var d = cur - prev.value;
+    var r = d / prev.value;
+    var abs;
+    if (unit === 'count') abs = (d > 0 ? '+' : '') + int(d) + ' 件/单';
+    else if (unit === 'ratio') abs = (d >= 0 ? '+' : '') + d.toFixed(2);
+    else if (unit === 'int') abs = (d > 0 ? '+' : '') + int(d);
+    else abs = (d >= 0 ? '+' : '') + money(d);
+    return {
+      text: (r >= 0 ? '▲ ' : '▼ ') + Math.abs(r * 100).toFixed(1) + '%',
+      abs: abs,
+      cls: r >= 0 ? 'up' : 'down'
+    };
+  }
+
+  /* ---------- 渲染：头部 ---------- */
+  function renderHead() {
+    var d = dayMap[current];
+    var m = derive(d);
+    var prev = prevOf(current);
+    var pm = prev ? derive(prev) : null;
+    document.getElementById('datePick').value = current;
+    var chip = document.getElementById('levelChip');
+    chip.textContent = d.level === 'detail' ? '商品明细已同步' : '仅店铺汇总';
+    chip.className = 'chip ' + (d.level === 'detail' ? 'ok' : 'warn');
+    document.getElementById('dateMeta').textContent = current.replace(/-/g, '.') + ' ' + wd(current) +
+      (prev ? ' · 对比 ' + prev.date.replace(/-/g, '.') : ' · 无对比日');
+
+    document.getElementById('heroVal').textContent = money(m.gmv);
+    var dv = document.getElementById('heroDelta');
+    if (prev && pm.gmv) {
+      var g = delta(m.gmv, { value: pm.gmv });
+      dv.className = 'delta ' + g.cls;
+      dv.innerHTML = '<em>' + g.text + '</em><span>' + g.abs + ' vs ' + dLabel(prev.date) + '</span>';
+    } else {
+      dv.className = 'delta flat';
+      dv.innerHTML = '<span>该日暂无可对比的前一日数据</span>';
+    }
+    document.getElementById('heroMeta').innerHTML =
+      '<span>订单 <b>' + int(m.orders) + '</b></span>' +
+      '<span>出单件数 <b>' + int(m.paidUnits) + '</b></span>' +
+      '<span>客单价 <b>' + money(m.aov) + '</b></span>' +
+      '<span>样品 <b>' + int(m.samples) + '</b> 件</span>';
+
+    // 右侧四个环
+    var rings = [
+      { k: '毛利率', v: m.gpRate, txt: pct(m.gpRate), tone: m.gpRate >= 0.15 ? 'good' : 'bad' },
+      { k: '总营销 ROI', v: m.totalRoi / 10, txt: m.totalRoi.toFixed(2), tone: 'good' },
+      { k: '广告 ROI', v: m.adRoi / 15, txt: m.adRoi.toFixed(2), tone: m.adRoi >= 5 ? 'good' : 'mid' },
+      { k: '联盟 ROI', v: m.affRoi / 15, txt: m.affRoi.toFixed(2), tone: m.affRoi >= 5 ? 'good' : 'mid' }
+    ];
+    document.getElementById('heroRings').innerHTML = rings.map(function (r) {
+      var a = Math.max(0, Math.min(1, r.v)) * 360;
+      return '<div class="ring">' +
+        '<div class="ring-dial" style="background:conic-gradient(var(--accent) ' + a + 'deg,#eceef3 0)">' +
+        '<div class="ring-in"><span>' + r.txt + '</span></div></div>' +
+        '<p>' + r.k + '</p></div>';
+    }).join('');
+  }
+
+  /* ---------- 渲染：KPI ---------- */
+  function pstat(label, value) {
+    return '<div class="pstat"><div class="l">' + label + '</div><div class="v">' + value + '</div></div>';
+  }
+  function miniStat(label, value, d) {
+    var dd = d && d.text !== '—' ? '<div class="d ' + d.cls + '">' + d.text + (d.abs ? '<i>' + d.abs + '</i>' : '') + '</div>' : '<div class="d flat">—</div>';
+    return '<div class="mini"><div class="l">' + label + '</div><div class="v">' + value + '</div>' + dd + '</div>';
+  }
+  function panel(title, sub, minis) {
+    return '<section class="card panel"><div class="panel-head"><b>' + title + '</b><span class="muted">' + sub + '</span></div>' +
+      '<div class="mini-grid">' + minis.join('') + '</div></section>';
+  }
+
+
+  /* ---------- 渲染：本月累计 ---------- */
+  function renderMonth() {
+    var ym = current.slice(0, 7);
+    var ds = allDays.map(function (x) { return dayMap[x]; }).filter(function (d) { return d.date.startsWith(ym) && d.date <= current; });
+    var a = { gmv: 0, gp: 0, orders: 0, units: 0, samples: 0, adSpend: 0, adRev: 0, affCom: 0, affRev: 0 };
+    ds.forEach(function (d) {
+      var m = derive(d);
+      a.gmv += m.gmv; a.gp += m.gp; a.orders += m.orders; a.units += m.paidUnits;
+      a.samples += m.samples; a.adSpend += m.adSpend; a.adRev += m.adRev;
+      a.affCom += m.affCom; a.affRev += m.affRev;
+    });
+    var gpRate = a.gmv ? a.gp / a.gmv : 0;
+    var aov = a.orders ? a.gmv / a.orders : 0;
+    var adRoi = a.adSpend ? a.adRev / a.adSpend : 0;
+    var affRoi = a.affCom ? a.affRev / a.affCom : 0;
+    var ymTxt = ym.slice(0, 4) + ' 年 ' + parseInt(ym.slice(5, 7), 10) + ' 月 · 本月累计（' + ds.length + ' 天）';
+    var items = [
+      pstat('总 GMV', '<b>' + money(a.gmv) + '</b>'),
+      pstat('总利润', '<b class="' + (a.gp >= 0 ? '' : 'down') + '">' + money(a.gp) + '</b>'),
+      pstat('利润率', '<b>' + pct(gpRate) + '</b>'),
+      pstat('订单数', int(a.orders) + ' 单'),
+      pstat('出单件数', int(a.units) + ' 件'),
+      pstat('客单价', money(aov)),
+      pstat('广告 ROI', adRoi.toFixed(2)),
+      pstat('联盟 ROI', affRoi.toFixed(2))
+    ];
+    document.getElementById('monthBlock').innerHTML =
+      '<section class="card panel month-card"><div class="panel-head"><b>' + ymTxt + '</b><span class="muted">截至 ' + current.replace(/-/g, '.') + '</span></div>' +
+      '<div class="mini-grid">' + items.join('') + '</div></section>';
+  }
+
+  function renderKpis() {
+    var d = dayMap[current], m = derive(d);
+    var prev = prevOf(current), pm = prev ? derive(prev) : null;
+
+    var gpD = pm ? delta(m.gp, { value: pm.gp }) : null;
+    document.getElementById('profitBlock').innerHTML =
+      '<div class="profit-main">' +
+        '<div class="k">毛利</div>' +
+        '<div class="big">' + money(m.gp) + '</div>' +
+        '<div class="delta ' + (gpD && gpD.text !== '—' ? gpD.cls : 'flat') + '">' +
+          (gpD && gpD.text !== '—' ? gpD.text + '<i>' + gpD.abs + '</i>' : '<span>毛利率 ' + pct(m.gpRate) + '</span>') +
+        '</div>' +
+      '</div>' +
+      '<div class="profit-stats">' +
+        pstat('产品成本', money(m.prodCost)) +
+        pstat('物流成本', money(m.logiCost)) +
+        pstat('样品费用', money(m.sampCost)) +
+        pstat('总营销成本', money(m.marketing)) +
+        pstat('总营销 ROI', m.totalRoi.toFixed(2)) +
+      '</div>';
+
+    var affD = [pm ? delta(m.affRev, { value: pm.affRev }) : null,
+                pm ? delta(m.affCom, { value: pm.affCom }) : null,
+                pm ? delta(m.affRoi, { value: pm.affRoi }, 'ratio') : null];
+    var adD = [pm ? delta(m.adRev, { value: pm.adRev }) : null,
+               pm ? delta(m.adSpend, { value: pm.adSpend }) : null,
+               pm ? delta(m.adRoi, { value: pm.adRoi }, 'ratio') : null];
+    document.getElementById('channelBlock').innerHTML =
+      panel('联盟达人', '收入 / 佣金 / ROI', [
+        miniStat('收入', money(m.affRev), affD[0]),
+        miniStat('佣金', money(m.affCom), affD[1]),
+        miniStat('ROI', m.affRoi.toFixed(2), affD[2])
+      ]) +
+      panel('广告', '收入 / 花费 / ROI', [
+        miniStat('收入', money(m.adRev), adD[0]),
+        miniStat('花费', money(m.adSpend), adD[1]),
+        miniStat('ROI', m.adRoi.toFixed(2), adD[2])
+      ]);
+  }
+
+  /* ---------- 渲染：成本结构 ---------- */
+  function renderPnl() {
+    var d = dayMap[current], m = derive(d);
+    var items = [
+      { k: '产品成本', v: m.prodCost, c: 'c1' },
+      { k: '物流成本', v: m.logiCost, c: 'c2' },
+      { k: '联盟佣金', v: m.affCom, c: 'c3' },
+      { k: '广告花费', v: m.adSpend, c: 'c4' },
+      { k: '平台佣金 6%', v: m.platform, c: 'c5' },
+      { k: '支付手续费 1%', v: m.payFee, c: 'c6' },
+      { k: '预计退款 10%', v: m.refund, c: 'c6' },
+      { k: '退货物流 1%', v: m.refundShip, c: 'c6' },
+      { k: '合资营销 1%', v: m.jv, c: 'c6' },
+      { k: '样品费用', v: m.sampCost, c: 'c7' }
+    ];
+    var total = m.gmv || 1;
+    var barSegs = items.map(function (i) {
+      return '<span class="' + i.c + '" style="width:' + Math.max(0, i.v / total * 100) + '%"></span>';
+    }).join('') + '<span class="gp" style="width:' + Math.max(0, m.gp / total * 100) + '%"></span>';
+
+    var rows = items.map(function (i) {
+      return '<tr><td><i class="dot ' + i.c + '"></i>' + i.k + '</td>' +
+        '<td class="r">' + money(i.v) + '</td>' +
+        '<td class="r muted">' + pct(i.v / total, 1) + '</td></tr>';
+    }).join('');
+
+    document.getElementById('pnlBody').innerHTML =
+      '<div class="stack">' + barSegs + '</div>' +
+      '<div class="stack-legend"><span><i class="dot gp"></i>毛利 ' + money(m.gp) + ' · ' + pct(m.gpRate) + '</span>' +
+      '<span class="muted">GMV ' + money(m.gmv) + '</span></div>' +
+      '<table class="mini"><thead><tr><th>项目</th><th class="r">金额</th><th class="r">占 GMV</th></tr></thead><tbody>' +
+      rows +
+      '<tr class="sum"><td>毛利</td><td class="r">' + money(m.gp) + '</td><td class="r">' + pct(m.gpRate) + '</td></tr>' +
+      '</tbody></table>';
+  }
+
+  /* ---------- 渲染：趋势图 ---------- */
+  var chartSeries = [];
+  function metricOf(d, key) {
+    var m = derive(d);
+    switch (key) {
+      case 'gp': return m.gp;
+      case 'units': return m.paidUnits;
+      case 'adSpend': return m.adSpend;
+      case 'affCom': return m.affCom;
+      case 'marketing': return m.marketing;
+      default: return m.gmv;
+    }
+  }
+  function metricLabel(key) {
+    return { gmv: '店铺总收入', gp: '毛利', units: '出单件数', adSpend: '广告花费', affCom: '联盟佣金', marketing: '总营销成本' }[key];
+  }
+  function isMoneyMetric(k) { return k !== 'units'; }
+
+  function renderChart() {
+    var box = document.getElementById('chartBox');
+    var days = allDays.map(function (x) { return dayMap[x]; });
+    if (chartRange === 'recent') {
+      var end = allDays.indexOf(current);
+      days = days.slice(Math.max(0, end - MONTH_DAYS + 1), end + 1);
+    }
+    chartSeries = days;
+    var W = box.clientWidth || 800, H = 250;
+    var padL = 46, padR = 12, padT = 14, padB = 26;
+    var iw = W - padL - padR, ih = H - padT - padB;
+    var vals = days.map(function (d) { return metricOf(d, chartMetric); });
+    var maxV = Math.max.apply(null, vals.concat([1]));
+    var niceMax = maxV * 1.12;
+    if (isMoneyMetric(chartMetric)) niceMax = Math.ceil(niceMax / 50) * 50;
+    else niceMax = Math.ceil(niceMax / 5) * 5;
+    var f = isMoneyMetric(chartMetric) ? function (v) { return money(v, 0).replace('$', '$'); } : function (v) { return int(v); };
+
+    var X = function (i) { return padL + (days.length <= 1 ? iw / 2 : iw * i / (days.length - 1)); };
+    var Y = function (v) { return padT + ih - (v / niceMax) * ih; };
+
+    var grid = '';
+    for (var g = 0; g <= 4; g++) {
+      var yy = padT + ih - ih * g / 4;
+      var vv = niceMax * g / 4;
+      grid += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4" stroke-width="1"/>' +
+        '<text x="' + (padL - 8) + '" y="' + (yy + 4) + '" text-anchor="end" fill="#9aa1ad" font-size="11">' +
+        (isMoneyMetric(chartMetric) ? '$' + (vv >= 1000 ? (vv / 1000).toFixed(1) + 'k' : vv.toFixed(0)) : vv.toFixed(0)) + '</text>';
+    }
+
+    var pts = days.map(function (d, i) { return [X(i), Y(vals[i])]; });
+    // 按日期连续性分段，避免跨缺失日期连线
+    var segs = [], seg = [];
+    days.forEach(function (d, i) {
+      if (seg.length) {
+        var gap = (new Date(d.date) - new Date(days[i - 1].date)) / 86400000;
+        if (gap > 1) { segs.push(seg); seg = []; }
+      }
+      seg.push(i);
+    });
+    if (seg.length) segs.push(seg);
+    var line = '', area = '';
+    segs.forEach(function (sg) {
+      var path = sg.map(function (i, k) { return (k ? 'L' : 'M') + pts[i][0].toFixed(1) + ',' + pts[i][1].toFixed(1); }).join(' ');
+      line += ' ' + path;
+      if (sg.length >= 2) {
+        area += ' M' + pts[sg[0]][0].toFixed(1) + ',' + (padT + ih) + ' ' + path.replace(/^M/, 'L') +
+          ' L' + pts[sg[sg.length - 1]][0].toFixed(1) + ',' + (padT + ih) + ' Z';
+      }
+    });
+
+    // 7日均线
+    var ma = days.map(function (d, i) {
+      var s = 0, c = 0;
+      for (var j = Math.max(0, i - 6); j <= i; j++) { s += vals[j]; c++; }
+      return s / c;
+    });
+    var maLine = ma.map(function (v, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' ');
+
+    var xlabels = '';
+    var step = Math.max(1, Math.ceil(days.length / 8));
+    var placed = [];
+    days.forEach(function (d, i) {
+      var isLast = i === days.length - 1;
+      var isTick = i % step === 0;
+      var label = isLast ? '当前' : dLabel(d.date);
+      if (!isLast && !isTick) return;
+      if (placed.length && Math.abs(X(i) - placed[placed.length - 1]) < 46) return;
+      placed.push(X(i));
+      xlabels += '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle" fill="' + (isLast ? '#4b45d6' : '#9aa1ad') + '" font-size="11">' + label + '</text>';
+    });
+
+    var dots = '';
+    days.forEach(function (d, i) {
+      if (d.date === current) {
+        dots += '<circle cx="' + X(i) + '" cy="' + Y(vals[i]) + '" r="5" fill="var(--accent)" stroke="#fff" stroke-width="2"/>';
+      }
+    });
+
+    box.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
+      '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4b45d6" stop-opacity=".18"/><stop offset="100%" stop-color="#4b45d6" stop-opacity="0"/></linearGradient></defs>' +
+      grid +
+      (days.length ? '<path d="' + area + '" fill="url(#ag)"/>' : '') +
+      '<path d="' + maLine + '" fill="none" stroke="#c9ccd6" stroke-width="1.2" stroke-dasharray="4 3"/>' +
+      '<path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/>' +
+      dots +
+      '<line id="hoverLine" x1="0" x2="0" y1="' + padT + '" y2="' + (padT + ih) + '" stroke="#d5d8e0" stroke-width="1" opacity="0"/>' +
+      xlabels +
+      '</svg>' +
+      '<div class="chart-tip" id="chartTip"></div>';
+
+    var svg = box.querySelector('svg');
+    svg.addEventListener('mousemove', function (ev) {
+      if (!days.length) return;
+      var rect = svg.getBoundingClientRect();
+      var x = (ev.clientX - rect.left) * (W / rect.width);
+      var i = Math.round((x - padL) / (iw || 1) * (days.length - 1));
+      i = Math.max(0, Math.min(days.length - 1, i));
+      var d = days[i], v = vals[i];
+      var tip = document.getElementById('chartTip');
+      tip.style.opacity = 1;
+      tip.innerHTML = '<b>' + d.date + '</b> ' + wd(d.date) + '<br><span>' + metricLabel(chartMetric) + '</span> ' + f(v);
+      var tx = X(i), tw = tip.offsetWidth;
+      tip.style.left = Math.min(Math.max(4, tx - tw / 2), W - tw - 4) + 'px';
+      var s = document.getElementById('hoverLine');
+      s.setAttribute('x1', tx); s.setAttribute('x2', tx); s.setAttribute('opacity', 1);
+    });
+    svg.addEventListener('mouseleave', function () {
+      document.getElementById('chartTip').style.opacity = 0;
+      document.getElementById('hoverLine').setAttribute('opacity', 0);
+    });
+
+    var gaps = [];
+    for (var gi = 1; gi < days.length; gi++) {
+      var gm = (new Date(days[gi].date) - new Date(days[gi - 1].date)) / 86400000;
+      if (gm > 1) {
+        var g1 = new Date(days[gi - 1].date); g1.setDate(g1.getDate() + 1);
+        var g2 = new Date(days[gi].date); g2.setDate(g2.getDate() - 1);
+        var fd = function (x) { return (x.getMonth() + 1) + '/' + x.getDate(); };
+        gaps.push(fd(g1) + '–' + fd(g2));
+      }
+    }
+    document.getElementById('chartSummary').innerHTML =
+      '<span>区间合计 <b>' + (isMoneyMetric(chartMetric) ? money(vals.reduce(function (a, b) { return a + b; }, 0)) : int(vals.reduce(function (a, b) { return a + b; }, 0))) + '</b></span>' +
+      '<span>日均 <b>' + (isMoneyMetric(chartMetric) ? money(vals.reduce(function (a, b) { return a + b; }, 0) / (vals.length || 1)) : (vals.reduce(function (a, b) { return a + b; }, 0) / (vals.length || 1)).toFixed(1)) + '</b></span>' +
+      '<span class="muted">虚线为 7 日均值</span>' +
+      (gaps.length ? '<span class="muted">折线断开处为未录入日期（' + gaps.join('、') + '）</span>' : '');
+  }
+
+  /* ---------- 渲染：商品表 ---------- */
+  function productRows(d) {
+    if (d.products) {
+      var rows = d.products.slice();
+      if (num(d.adUnmatched) > 0) {
+        rows.push({ sku: '__other__', name: '未匹配广告花费（无对应商品）', units: 0, paid: 0, samples: 0, rev: 0, gp: -num(d.adUnmatched), adSpend: num(d.adUnmatched), com: 0, affRev: 0, placeholder: true });
+      }
+      return rows;
+    }
+    var u = d.unitsBySku || {}, s = d.samplesBySku || {};
+    var keys = Object.keys(u).concat(Object.keys(s).filter(function (k) { return !(k in u); }));
+    return keys.map(function (k) {
+      var total = u[k] || 0, sm = s[k] || 0, paid = Math.max(0, total - sm);
+      return { sku: k, name: costOf(k).name || k, units: paid, samples: sm, rev: 0, gp: 0, adSpend: 0, com: 0, _noRev: true };
+    }).filter(function (r) { return r.units > 0 || r.samples > 0; });
+  }
+
+  function prevUnitsMap(prev) {
+    if (!prev) return {};
+    if (prev.unitsBySku) {
+      var o2 = {}, s2 = prev.samplesBySku || {};
+      Object.keys(prev.unitsBySku).forEach(function (k) { o2[k] = Math.max(0, prev.unitsBySku[k] - (s2[k] || 0)); });
+      return o2;
+    }
+    var o = {};
+    (prev.products || []).forEach(function (p) { o[p.sku] = num(p.paid); });
+    return o;
+  }
+
+  function renderProducts() {
+    document.getElementById('rangeBar').style.display = prodTab === 'range' ? 'flex' : 'none';
+    if (prodTab === 'range') { renderRange(); return; }
+    var d = dayMap[current];
+    var prev = prevOf(current);
+    var pm = prevUnitsMap(prev);
+    var prevD = prevDetailOf(current);
+    var rows = productRows(d);
+    var hasRev = d.level === 'detail';
+    var totalRev = rows.reduce(function (a, b) { return a + num(b.rev); }, 0);
+    function uVal(r) { return hasRev ? num(r.paid) : num(r.units); }
+    var totUnits = rows.reduce(function (a, b) { return a + uVal(b); }, 0);
+
+    var body = document.getElementById('prodBody');
+    var head = document.getElementById('prodHead');
+    var note = document.getElementById('prodNote');
+
+    var cols = hasRev
+      ? [
+        { id: 'name', label: '商品', sort: 'name', l: 1 },
+        { id: 'units', label: '出单件数', sort: 'units' },
+        { id: 'uchg', label: '件数环比', sort: null },
+        { id: 'rev', label: '收入', sort: 'rev' },
+        { id: 'rchg', label: '收入环比', sort: null },
+        { id: 'gp', label: '毛利', sort: 'gp' },
+        { id: 'gpr', label: '毛利率', sort: 'gpr' },
+        { id: 'adSpend', label: '广告花费', sort: 'adSpend' },
+        { id: 'adRoi', label: '广告ROI', sort: 'adRoi' },
+        { id: 'adchg', label: 'ROI环比', sort: null },
+        { id: 'com', label: '联盟佣金', sort: 'com' },
+        { id: 'samples', label: '样品', sort: 'samples' }
+      ]
+      : [
+        { id: 'name', label: '商品', sort: 'name', l: 1 },
+        { id: 'units', label: '出单件数', sort: 'units' },
+        { id: 'uchg', label: '件数环比', sort: null },
+        { id: 'ushare', label: '件数占比', sort: 'units' },
+        { id: 'samples', label: '样品', sort: 'samples' }
+      ];
+
+    if (!hasRev && sortKey === 'rev') { sortKey = 'units'; sortDir = -1; }
+
+    head.innerHTML = cols.map(function (c) {
+      var arrow = (c.sort && sortKey === c.id) ? (sortDir > 0 ? ' ▲' : ' ▼') : '';
+      var cls = (c.l ? 'l' : 'r') + (c.sort ? ' sortable' : '');
+      return '<th class="' + cls + '"' + (c.sort ? ' data-k="' + c.id + '"' : '') + '>' + c.label + arrow + '</th>';
+    }).join('');
+
+    var list = rows.filter(function (r) {
+      if (!keyword) return true;
+      var q = keyword.toLowerCase();
+      return (r.sku + ' ' + (r.name || '')).toLowerCase().indexOf(q) >= 0;
+    });
+
+    function sortVal(r, key) {
+      if (key === 'name') return r.name || '';
+      if (key === 'gpr') return num(r.rev) ? num(r.gp) / num(r.rev) : -99;
+      if (key === 'ushare') return num(r.units);
+      if (key === 'units') return uVal(r);
+      if (key === 'adRoi') return num(r.adSpend) ? num(r.adRev) / num(r.adSpend) : -1;
+      return num(r[key]);
+    }
+    list.sort(function (a, b) {
+      if (sortKey === 'name') return String(sortVal(a, 'name')).localeCompare(String(sortVal(b, 'name')), 'zh') * sortDir;
+      return (sortVal(a, sortKey) - sortVal(b, sortKey)) * sortDir;
+    });
+
+    document.getElementById('prodCount').textContent = list.filter(function (r) { return !r.placeholder; }).length + ' 个商品';
+
+    var html = list.map(function (r) {
+      var uChg = (pm[r.sku] !== undefined) ? uVal(r) - num(pm[r.sku]) : null;
+      var uChgTxt = uChg === null ? '—' : (uChg > 0 ? '+' + uChg : (uChg === 0 ? '0' : String(uChg)));
+      var uChgCls = uChg === null ? 'flat' : (uChg > 0 ? 'up' : (uChg < 0 ? 'down' : 'flat'));
+
+      var rChgTxt = '—', rChgCls = 'flat';
+      if (hasRev && prevD && prevD.products) {
+        var pr = prevD.products.filter(function (p) { return p.sku === r.sku; })[0];
+        if (pr) {
+          var dd = num(r.rev) - num(pr.rev);
+          if (!pr.rev) { rChgTxt = dd > 0 ? '新增' : '—'; rChgCls = dd > 0 ? 'up' : 'flat'; }
+          else {
+            var r = dd / pr.rev;
+            rChgTxt = (r >= 0 ? '▲ ' : '▼ ') + Math.abs(r * 100).toFixed(1) + '%';
+            rChgCls = r >= 0 ? 'up' : 'down';
+          }
+        } else {
+          rChgTxt = num(r.rev) > 0 ? '新增' : '—'; rChgCls = num(r.rev) > 0 ? 'up' : 'flat';
+        }
+      }
+
+      var roi = num(r.adSpend) > 0 ? num(r.adRev) / num(r.adSpend) : null;
+      var roiTxt = roi === null ? '—' : roi.toFixed(2);
+      var roiCls = roi === null ? 'flat' : (roi >= 1 ? 'up' : 'down');
+      var roiChgTxt = '—', roiChgCls = 'flat';
+      if (hasRev && prevD && prevD.products && roi !== null) {
+        var pv = prevD.products.filter(function (x) { return x.sku === r.sku; })[0];
+        var pRoi = pv && num(pv.adSpend) > 0 ? num(pv.adRev) / num(pv.adSpend) : null;
+        if (pRoi !== null) {
+          var dr = roi - pRoi;
+          var rp = pRoi ? dr / pRoi : 0;
+          roiChgTxt = (dr >= 0 ? '▲ ' : '▼ ') + Math.abs(rp * 100).toFixed(1) + '%';
+          roiChgCls = dr >= 0 ? 'up' : 'down';
+        }
+      }
+
+      var nameCell = '<td class="l name-cell"><span class="nm">' + esc(r.name) +
+        (r.missingCost ? '<i class="flag">缺成本</i>' : '') + '</span>' +
+        (r.placeholder ? '' : '<span class="sku">' + esc(r.sku) + '</span>') + '</td>';
+
+      if (!hasRev) {
+        var us = totUnits ? num(r.units) / totUnits : 0;
+        return '<tr><td class="l name-cell"><span class="nm">' + esc(r.name) + '</span><span class="sku">' + esc(r.sku) + '</span></td>' +
+          '<td class="r">' + int(r.units) + '</td>' +
+          '<td class="r ' + uChgCls + '">' + uChgTxt + '</td>' +
+          '<td class="r"><span class="ushare"><i style="width:' + (us * 100).toFixed(1) + '%"></i></span>' + pct(us) + '</td>' +
+          '<td class="r">' + int(r.samples) + '</td></tr>';
+      }
+
+      var share = totalRev ? num(r.rev) / totalRev : 0;
+      return '<tr' + (r.placeholder ? ' class="ph"' : '') + '>' + nameCell +
+        '<td class="r">' + int(uVal(r)) + '</td>' +
+        '<td class="r ' + uChgCls + '">' + uChgTxt + '</td>' +
+        '<td class="r"><b>' + money(r.rev) + '</b><span class="share-bar"><i style="width:' + (share * 100).toFixed(1) + '%"></i></span></td>' +
+        '<td class="r ' + rChgCls + '">' + rChgTxt + '</td>' +
+        '<td class="r ' + (num(r.gp) >= 0 ? '' : 'down') + '">' + money(r.gp) + '</td>' +
+        '<td class="r muted">' + (r.missingCost ? '—' : pct(num(r.rev) ? num(r.gp) / num(r.rev) : 0)) + '</td>' +
+        '<td class="r">' + money(r.adSpend) + '</td>' +
+        '<td class="r ' + roiCls + '">' + roiTxt + '</td>' +
+        '<td class="r ' + roiChgCls + '">' + roiChgTxt + '</td>' +
+        '<td class="r">' + money(r.com) + '</td>' +
+        '<td class="r">' + int(r.samples) + '</td></tr>';
+    }).join('');
+
+    body.innerHTML = html || '<tr><td colspan="' + cols.length + '" class="empty">' + (keyword ? '没有匹配的商品' : '该日期没有商品明细数据') + '</td></tr>';
+
+    var tm = hasRev
+      ? '<tr class="sum"><td class="l">合计</td><td class="r">' + int(totUnits) + '</td><td class="r">—</td>' +
+      '<td class="r"><b>' + money(totalRev) + '</b></td><td class="r">—</td>' +
+      '<td class="r"><b>' + money(rows.reduce(function (a, b) { return a + num(b.gp); }, 0)) + '</b></td><td class="r">' + pct(derive(d).gpRate) + '</td>' +
+      '<td class="r">' + money(rows.reduce(function (a, b) { return a + num(b.adSpend); }, 0)) + '</td>' +
+      '<td class="r">' + (rows.reduce(function (a, b) { return a + num(b.adSpend); }, 0)
+        ? (rows.reduce(function (a, b) { return a + num(b.adRev); }, 0) / rows.reduce(function (a, b) { return a + num(b.adSpend); }, 0)).toFixed(2)
+        : '—') + '</td><td class="r">—</td>' +
+      '<td class="r">' + money(rows.reduce(function (a, b) { return a + num(b.com); }, 0)) + '</td>' +
+      '<td class="r">' + int(rows.reduce(function (a, b) { return a + num(b.samples); }, 0)) + '</td></tr>'
+      : '';
+    document.getElementById('prodFoot').innerHTML = tm;
+
+    var miss = rows.filter(function (r) { return r.missingCost; }).map(function (r) { return r.sku; });
+    note.textContent = (hasRev
+      ? (prevD ? '收入环比对比 ' + prevD.date + '（上一明细日）；件数环比对比 ' + (prev ? prev.date : '—') + '。'
+        : '件数环比对比 ' + (prev ? prev.date : '—') + '；收入环比需要前一日也是商品明细，' + (prev ? prev.date + ' 仅有店铺汇总' : '当前无更早明细') + '，故收入环比与广告ROI 环比显示 —。')
+      : '该日期仅有店铺汇总数据，商品收入与毛利需当日订单明细才能计算，此处仅展示件数与样品。')
+      + (miss.length ? ' 标注「缺成本」的商品未在成本表中建档（' + miss.join('、') + '），其毛利未扣产品成本，请补充成本后再看毛利。' : '')
+      + (num(d.adInferred) > 0 ? ' 广告花费 $' + num(d.adInferred).toFixed(2) + ' 因商品ID 未在成本表登记，已按广告计划名里的 SKU 编码推断归属（' + (d.adInferredPids || []).filter(function (x) { return x; }).join('、') + '）；补全商品ID 后重新上传即可精确归属。' : '')
+      + (num(d.adUnmatched) > 0 ? ' 另有广告花费 $' + num(d.adUnmatched).toFixed(2) + ' 无法归属到任何商品，已计入店铺级广告花费。' : '');
+  }
+
+  /* ---------- 时段汇总商品表 ---------- */
+  function renderRange() {
+    var startEl = document.getElementById('rangeStart'), endEl = document.getElementById('rangeEnd');
+    if (!startEl.value) startEl.value = allDays[0];
+    if (!endEl.value) endEl.value = current;
+    var start = startEl.value || allDays[0], end = endEl.value || current;
+    if (start < allDays[0]) start = allDays[0];
+    if (end > current) end = current;
+    if (start > end) { var t = start; start = end; end = t; }
+    startEl.value = start; endEl.value = end;
+
+    var days = allDays.filter(function (x) { return x >= start && x <= end; }).map(function (x) { return dayMap[x]; });
+    var detailDays = days.filter(function (d) { return d.products; }).length;
+
+    var agg = {};
+    function get(sku) {
+      return agg[sku] || (agg[sku] = { sku: sku, name: costOf(sku).name || sku, gmv: 0, paid: 0, adSpend: 0, adRev: 0 });
+    }
+    days.forEach(function (d) {
+      if (d.products) {
+        d.products.forEach(function (p) {
+          if (p.placeholder) return;
+          var a = get(p.sku);
+          a.gmv += num(p.rev); a.paid += num(p.paid);
+          a.adSpend += num(p.adSpend); a.adRev += num(p.adRev);
+        });
+      } else {
+        var u = d.unitsBySku || {}, s = d.samplesBySku || {};
+        Object.keys(u).forEach(function (k) {
+          var paid = Math.max(0, num(u[k]) - num(s[k] || 0));
+          if (paid > 0) get(k).paid += paid;
+        });
+      }
+    });
+
+    var rows = Object.keys(agg).map(function (k) { return agg[k]; });
+    var q = keyword.toLowerCase();
+    rows = rows.filter(function (r) { return !q || (r.sku + ' ' + (r.name || '')).toLowerCase().indexOf(q) >= 0; });
+
+    var cols = [
+      { id: 'name', label: '商品', sort: 'name', l: 1 },
+      { id: 'gmv', label: 'GMV', sort: 'gmv' },
+      { id: 'paid', label: '出单件数', sort: 'paid' },
+      { id: 'adSpend', label: '广告花费', sort: 'adSpend' },
+      { id: 'adRev', label: '广告收入', sort: 'adRev' },
+      { id: 'adRoi', label: '广告ROI', sort: 'adRoi' }
+    ];
+    if (cols.every(function (c) { return c.sort !== sortKey; })) { sortKey = 'gmv'; sortDir = -1; }
+
+    function sortVal(r, key) {
+      if (key === 'name') return r.name || '';
+      if (key === 'adRoi') return num(r.adSpend) ? num(r.adRev) / num(r.adSpend) : -1;
+      return num(r[key]);
+    }
+    rows.sort(function (a, b) {
+      if (sortKey === 'name') return String(sortVal(a, 'name')).localeCompare(String(sortVal(b, 'name')), 'zh') * sortDir;
+      return (sortVal(a, sortKey) - sortVal(b, sortKey)) * sortDir;
+    });
+
+    var head = document.getElementById('prodHead');
+    head.innerHTML = cols.map(function (c) {
+      var arrow = (c.sort && sortKey === c.id) ? (sortDir > 0 ? ' ▲' : ' ▼') : '';
+      var cls = (c.l ? 'l' : 'r') + (c.sort ? ' sortable' : '');
+      return '<th class="' + cls + '"' + (c.sort ? ' data-k="' + c.id + '"' : '') + '>' + c.label + arrow + '</th>';
+    }).join('');
+
+    var tGmv = rows.reduce(function (a, b) { return a + num(b.gmv); }, 0);
+    var tPaid = rows.reduce(function (a, b) { return a + num(b.paid); }, 0);
+    var tSpend = rows.reduce(function (a, b) { return a + num(b.adSpend); }, 0);
+    var tRev = rows.reduce(function (a, b) { return a + num(b.adRev); }, 0);
+
+    var html = rows.map(function (r) {
+      var roi = num(r.adSpend) > 0 ? num(r.adRev) / num(r.adSpend) : null;
+      var roiTxt = roi === null ? '—' : roi.toFixed(2);
+      var roiCls = roi === null ? 'flat' : (roi >= 1 ? 'up' : 'down');
+      var share = tGmv ? num(r.gmv) / tGmv : 0;
+      return '<tr><td class="l name-cell"><span class="nm">' + esc(r.name) + '</span><span class="sku">' + esc(r.sku) + '</span></td>' +
+        '<td class="r"><b>' + money(r.gmv) + '</b><span class="share-bar"><i style="width:' + (share * 100).toFixed(1) + '%"></i></span></td>' +
+        '<td class="r">' + int(r.paid) + '</td>' +
+        '<td class="r">' + money(r.adSpend) + '</td>' +
+        '<td class="r">' + money(r.adRev) + '</td>' +
+        '<td class="r ' + roiCls + '">' + roiTxt + '</td></tr>';
+    }).join('');
+    document.getElementById('prodBody').innerHTML = html || '<tr><td colspan="' + cols.length + '" class="empty">' + (keyword ? '没有匹配的商品' : '该时段没有商品数据') + '</td></tr>';
+
+    document.getElementById('prodFoot').innerHTML =
+      '<tr class="sum"><td class="l">合计</td>' +
+      '<td class="r"><b>' + money(tGmv) + '</b></td>' +
+      '<td class="r">' + int(tPaid) + '</td>' +
+      '<td class="r">' + money(tSpend) + '</td>' +
+      '<td class="r"><b>' + money(tRev) + '</b></td>' +
+      '<td class="r">' + (tSpend > 0 ? (tRev / tSpend).toFixed(2) : '—') + '</td></tr>';
+
+    document.getElementById('prodCount').textContent = rows.length + ' 个商品';
+    document.getElementById('rangeMeta').textContent = '区间 ' + days.length + ' 天（' + detailDays + ' 天有订单明细）';
+    document.getElementById('prodNote').textContent =
+      'GMV、广告花费/收入与广告 ROI 仅统计有订单明细的日期；仅有店铺汇总的日期只并入出单件数，其逐商品收入与广告暂无法拆分。广告 ROI＝广告收入 ÷ 广告花费。';
+  }
+
+  /* ---------- 主渲染 ---------- */
+  function render() {
+    current = current || allDays[allDays.length - 1];
+    if (!current || !dayMap[current]) current = allDays[allDays.length - 1];
+    var cur = dayMap[current];
+    if (cur && cur.products) recomputeProductCosts(cur);
+    renderHead();
+    renderMonth();
+    renderKpis();
+    renderPnl();
+    renderChart();
+    renderProducts();
+    document.body.classList.remove('loading');
+  }
+
+  /* ---------- 日期导航 ---------- */
+  function go(delta) {
+    var i = allDays.indexOf(current);
+    if (delta < 0 && i > 0) { current = allDays[i - 1]; render(); }
+    if (delta > 0 && i < allDays.length - 1) { current = allDays[i + 1]; render(); }
+  }
+
+  /* ---------- 弹窗 ---------- */
+  function openModal(id) {
+    document.getElementById(id).classList.add('show');
+    document.body.classList.add('modal-open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+    document.body.classList.remove('modal-open');
+  }
+
+  /* ---------- 上传解析 ---------- */
+  var parsed = { orders: null, ad: null, aff: null };
+
+  function toNum(v) {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === 'number') return v;
+    var s = String(v).replace(/[$,%\s]/g, '').replace(/,/g, '');
+    var n = parseFloat(s);
+    return isFinite(n) ? n : 0;
+  }
+  function toDate(v) {
+    if (!v) return null;
+    if (typeof v === 'number') { // excel serial
+      var d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+      return d.toISOString().slice(0, 10);
+    }
+    var s = String(v).trim();
+    var m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) return m[3] + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2);
+    var m2 = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m2) return m2[0];
+    var d2 = new Date(s);
+    if (!isNaN(d2)) return d2.toISOString().slice(0, 10);
+    return null;
+  }
+  function idxOf(header, names) {
+    for (var i = 0; i < header.length; i++) {
+      var h = String(header[i] === null || header[i] === undefined ? '' : header[i]).replace(/\s/g, '');
+      for (var j = 0; j < names.length; j++) if (h === names[j].replace(/\s/g, '')) return i;
+    }
+    return -1;
+  }
+  function normName(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
+  }
+  function skuOfSellerSku(s) {
+    var best = null;
+    costKeys().forEach(function (k) {
+      if (s.indexOf(k) === 0 && (!best || k.length > best.length)) best = k;
+    });
+    return best || s.split('-')[0];
+  }
+
+  async function parseOrders(file) {
+    var rows = await readXlsx(file);
+    var header = rows[0] || [];
+    var iOid = idxOf(header, ['Order ID']), iSku = idxOf(header, ['Seller SKU']),
+      iName = idxOf(header, ['Product Name']), iPid = idxOf(header, ['Product ID']),
+      iQty = idxOf(header, ['Quantity']), iAmt = idxOf(header, ['Order Amount']),
+      iTax = idxOf(header, ['Taxes']), iPlat = idxOf(header, ['SKU Platform Discount']),
+      iSub = idxOf(header, ['SKU Subtotal After Discount']),
+      iPaid = idxOf(header, ['Paid Time']), iCreated = idxOf(header, ['Created Time']);
+    if (iOid < 0 || iSku < 0 || iQty < 0) throw new Error('订单表缺少必要列（Order ID / Seller SKU / Quantity）');
+    var orderMap = {}, dates = {}, names = {}, idMap = {};
+    rows.slice(1).forEach(function (r) {
+      if (!r || !r[iOid]) return;
+      var oid = String(r[iOid]).trim();
+      if (!/^\d{8,}$/.test(oid)) return;  // 跳过表头/说明行
+      var sku = skuOfSellerSku(String(r[iSku] || '').trim());
+      var qty = toNum(r[iQty]);
+      var amt = toNum(r[iAmt]);
+      var tax = iTax >= 0 ? toNum(r[iTax]) : 0;
+      var plat = iPlat >= 0 ? toNum(r[iPlat]) : 0;
+      var sub = iSub >= 0 ? toNum(r[iSub]) : amt;
+      (orderMap[oid] = orderMap[oid] || []).push({ sku: sku, qty: qty, amt: amt, tax: tax, plat: plat, sub: sub });
+      var nm = String(r[iName] || '').trim();
+      if (nm) names[normName(nm)] = sku;
+      var pid = iPid >= 0 ? String(r[iPid] || '').trim() : '';
+      if (/^\d{15,20}$/.test(pid)) idMap[pid] = sku;
+      var dt = toDate(r[iPaid] !== undefined ? r[iPaid] : r[iCreated]);
+      if (dt) dates[dt] = (dates[dt] || 0) + 1;
+    });
+    // 样品订单（实付 0）不计入订单数；订单金额 = 买家实付 − 税 + 平台折扣；多 SKU 按（小计+平台折扣）权重分摊
+    var prod = {}, gmv = 0, units = 0, samples = 0, paidOrders = 0;
+    Object.keys(orderMap).forEach(function (oid) {
+      var rs = orderMap[oid], amt = rs[0].amt, tax = rs[0].tax;
+      var platSum = rs.reduce(function (a, x) { return a + x.plat; }, 0);
+      var isSample = amt === 0;
+      var orderGmv = isSample ? 0 : (amt - tax + platSum);
+      if (!isSample) paidOrders++;
+      var wSum = rs.reduce(function (a, x) { return a + x.sub + x.plat; }, 0);
+      rs.forEach(function (x) {
+        var w = x.sub + x.plat;
+        var share = wSum > 0 ? w / wSum : 1 / rs.length;
+        var rev = orderGmv * share;
+        var p = prod[x.sku] || (prod[x.sku] = { sku: x.sku, units: 0, paid: 0, samples: 0, rev: 0 });
+        p.units += x.qty; p.rev += rev;
+        if (isSample) p.samples += x.qty; else p.paid += x.qty;
+      });
+      units += rs.reduce(function (a, x) { return a + x.qty; }, 0);
+      if (isSample) samples += rs.reduce(function (a, x) { return a + x.qty; }, 0);
+      gmv += orderGmv;
+    });
+    var bestDate = Object.keys(dates).sort(function (a, b) { return dates[b] - dates[a]; })[0] || '';
+    return { prod: prod, orders: paidOrders, gmv: gmv, units: units, samples: samples, date: bestDate, names: names, idMap: idMap };
+  }
+
+  async function parseAd(file) {
+    var rows = await readXlsx(file);
+    var header = rows[0] || [];
+    var iName = idxOf(header, ['商品名称']), iSpend = idxOf(header, ['成本']),
+      iRev = idxOf(header, ['总收入']), iOrd = idxOf(header, ['SKU订单数']),
+      iPid = idxOf(header, ['商品ID']), iPlan = idxOf(header, ['广告计划名称']);
+    if (iSpend < 0 || iRev < 0) throw new Error('广告表缺少「成本」「总收入」列');
+    var list = [], spend = 0, rev = 0, orders = 0;
+    rows.slice(1).forEach(function (r) {
+      if (!r || !r[iName]) return;
+      var s = toNum(r[iSpend]), v = toNum(r[iRev]);
+      spend += s; rev += v; orders += toNum(r[iOrd]);
+      list.push({
+        name: String(r[iName]).trim(), norm: normName(r[iName]), spend: s, rev: v,
+        pid: iPid >= 0 ? String(r[iPid] || '').trim() : '',
+        plan: iPlan >= 0 ? String(r[iPlan] || '').trim() : ''
+      });
+    });
+    return { list: list, spend: spend, rev: rev, orders: orders };
+  }
+
+  async function parseAff(file) {
+    var rows = await readXlsx(file);
+    var header = rows[0] || [];
+    var iName = idxOf(header, ['商品名称']), iPid = idxOf(header, ['商品ID']),
+      iGmv = idxOf(header, ['达人归因GMV']),
+      iCom = idxOf(header, ['预计佣金']), iRef = idxOf(header, ['退款金额']),
+      iRefU = idxOf(header, ['已退款的商品件数']);
+    if (iGmv < 0 || iCom < 0) throw new Error('联盟表缺少「达人归因 GMV」「预计佣金」列');
+    var list = [], gmv = 0, com = 0, refund = 0, refundUnits = 0;
+    rows.slice(1).forEach(function (r) {
+      if (!r || !r[iName]) return;
+      var g = toNum(r[iGmv]), c = toNum(r[iCom]), rf = toNum(r[iRef]), ru = toNum(r[iRefU]);
+      gmv += g; com += c; refund += rf; refundUnits += ru;
+      list.push({
+        name: String(r[iName]).trim(), norm: normName(r[iName]), gmv: g, com: c, refund: rf,
+        pid: iPid >= 0 ? String(r[iPid] || '').trim() : ''
+      });
+    });
+    return { list: list, gmv: gmv, com: com, refund: refund, refundUnits: refundUnits };
+  }
+
+  // 按当前成本表重算商品级成本、毛利与店铺级成本合计
+  function recomputeProductCosts(rec) {
+    var prodCost = 0, logiCost = 0, sampCost = 0;
+    (rec.products || []).forEach(function (p) {
+      var c = costOf(p.sku), pc = num(c.pc), lg = num(c.lg);
+      p.prodCost = +(p.paid * pc).toFixed(2);
+      p.logiCost = +(p.paid * lg).toFixed(2);
+      var sc = p.samples * (pc + lg);
+      p.gp = rnd2(p.rev - p.prodCost - p.logiCost - sc - num(p.com) - num(p.adSpend) - p.rev * 0.19);
+      p.gpRate = p.rev ? p.gp / p.rev : 0;
+      p.missingCost = !(c && (pc > 0 || lg > 0));
+      prodCost += p.paid * pc; logiCost += p.paid * lg; sampCost += sc;
+    });
+    rec.prodCost = +prodCost.toFixed(2);
+    rec.logiCost = +logiCost.toFixed(2);
+    rec.sampCost = +sampCost.toFixed(2);
+    var gp = rnd2(rec.gmv - rec.prodCost - rec.logiCost - rec.sampCost - num(rec.affCom) - num(rec.adSpend) - rec.gmv * 0.19);
+    rec.gp = gp; rec.gpRate = rec.gmv ? gp / rec.gmv : 0;
+  }
+
+  function buildDay(date) {
+    var o = parsed.orders, a = parsed.ad, f = parsed.aff;
+    if (!o) throw new Error('请先上传订单表');
+    var gmv = num(o.gmv), units = num(o.units), samples = num(o.samples);
+    var prods = [];
+    Object.keys(o.prod).forEach(function (sku) {
+      var p = o.prod[sku], c = costOf(sku);
+      prods.push({
+        sku: sku, name: c.name || sku, units: p.units, paid: p.paid, samples: p.samples,
+        rev: +p.rev.toFixed(2), gp: 0, adSpend: 0, adRev: 0, com: 0, affRev: 0
+      });
+    });
+    var unmatched = 0, unmatchedRev = 0, inferredSpend = 0, inferredPids = [];
+    // 商品ID → SPU：成本表映射 + 订单表当日 Product ID 映射（覆盖成本表里过期的第二条链接 ID）
+    var idToSku = {};
+    costKeys().forEach(function (k) {
+      var ids = (costOf(k) || {}).ids || [];
+      ids.forEach(function (id) { idToSku[String(id)] = k; });
+    });
+    Object.keys(IDMAP).forEach(function (id) { idToSku[id] = IDMAP[id]; });
+    Object.keys(o.idMap || {}).forEach(function (id) { idToSku[id] = o.idMap[id]; });
+    function skuByToken(tok) {
+      tok = String(tok || '').replace(/[-_]\S*/, '').trim();
+      if (!tok) return null;
+      if (costOf(tok).name || costOf(tok).pc !== undefined) return tok;
+      if (costOf('CO' + tok).name || costOf('CO' + tok).pc !== undefined) return 'CO' + tok;
+      return null;
+    }
+    function hasProd(sku) { return prods.some(function (x) { return x.sku === sku; }); }
+    // 归属顺序：商品ID（最可靠）→ 商品名 → 广告计划名里的 SKU 编码 → 名称包含 SKU
+    // 返回 { sku, by } ，by='id'|'name' 为确定归属，'plan' 为按计划名推断
+    function matchSku(item) {
+      if (item.pid && idToSku[item.pid]) return { sku: idToSku[item.pid], by: 'id' };
+      if (item.norm && o.names[item.norm]) return { sku: o.names[item.norm], by: 'name' };
+      if (item.plan) {
+        var toks = String(item.plan).split('+'), first = null, present = null;
+        for (var i = 0; i < toks.length; i++) {
+          var hit = skuByToken(toks[i]);
+          if (hit) {
+            if (!first) first = hit;
+            if (!present && hasProd(hit)) present = hit;
+          }
+        }
+        if (present) return { sku: present, by: 'plan' };
+        if (first) return { sku: first, by: 'plan' };
+      }
+      var hit2 = null;
+      costKeys().forEach(function (k) {
+        if (item.norm && item.norm.indexOf(k.toLowerCase()) >= 0) hit2 = hit2 || k;
+      });
+      return hit2 ? { sku: hit2, by: 'name' } : null;
+    }
+    function ensureProd(sku) {
+      var p = prods.filter(function (x) { return x.sku === sku; })[0];
+      if (!p) {
+        var c = costOf(sku);
+        p = { sku: sku, name: c.name || sku, units: 0, paid: 0, samples: 0,
+              rev: 0, gp: 0, adSpend: 0, adRev: 0, com: 0, affRev: 0 };
+        prods.push(p);
+      }
+      return p;
+    }
+    if (a) {
+      a.list.forEach(function (item) {
+        var m = matchSku(item);
+        if (!m || !m.sku) { unmatched += item.spend; unmatchedRev += item.rev; return; }
+        if (!item.spend && !item.rev) return;   // 零花费零收入的行不建商品
+        if (m.by === 'plan' && item.spend > 0) { inferredSpend += item.spend; inferredPids.push(item.pid || item.name.slice(0, 18)); }
+        var p = ensureProd(m.sku);
+        p.adSpend += item.spend; p.adRev += item.rev;
+      });
+    }
+    if (f) {
+      f.list.forEach(function (item) {
+        var m = matchSku(item);
+        if (!m || !m.sku) return;
+        if (!hasProd(m.sku) && !item.com && !item.gmv) return;
+        var p = ensureProd(m.sku);
+        p.com += item.com; p.affRev += item.gmv;
+      });
+    }
+    var adSpend = a ? a.spend : 0, adRev = a ? a.rev : 0, adOrders = a ? a.orders : 0;
+    var affCom = f ? f.com : 0, affRev = f ? f.gmv : 0;
+    var rec = {
+      date: date, level: 'detail',
+      gmv: +gmv.toFixed(2), orders: o.orders, units: units, samples: samples,
+      adSpend: +adSpend.toFixed(2), adRev: +adRev.toFixed(2), adOrders: adOrders,
+      affRev: +affRev.toFixed(2), affCom: +affCom.toFixed(2),
+      affRefund: f ? +f.refund.toFixed(2) : 0,
+      adUnmatched: +unmatched.toFixed(2), adUnmatchedRev: +unmatchedRev.toFixed(2),
+      adInferred: +inferredSpend.toFixed(2), adInferredPids: inferredPids,
+      products: prods, source: 'upload'
+    };
+    recomputeProductCosts(rec);
+    return rec;
+  }
+
+  function showPreview() {
+    var box = document.getElementById('upPreview');
+    try {
+      var date = document.getElementById('upDate').value || parsed.orders.date;
+      var rec = buildDay(date);
+      var m = derive(rec);
+      box.className = 'preview ok';
+      box.innerHTML =
+        '<div class="pv-head">解析成功 · ' + date + ' · ' + rec.products.length + ' 个商品</div>' +
+        '<div class="pv-grid">' +
+        ['总收入 ' + money(m.gmv), '订单 ' + int(m.orders), '件数 ' + int(m.units), '样品 ' + int(m.samples),
+          '广告花费 ' + money(m.adSpend) + ' · ROI ' + (m.adRoi ? m.adRoi.toFixed(2) : '—'),
+          '联盟佣金 ' + money(m.affCom) + ' · ROI ' + (m.affRoi ? m.affRoi.toFixed(2) : '—'),
+          '毛利 ' + money(m.gp), '毛利率 ' + pct(m.gpRate)]
+          .map(function (x) { return '<span>' + x + '</span>'; }).join('') +
+        '</div>' +
+        (rec.adUnmatched > 0 ? '<p class="warn-txt">有 ' + money(rec.adUnmatched) + ' 广告花费未匹配到商品，已计入店铺总成本，并在商品表单独列出。</p>' : '') +
+        (num(rec.adInferred) > 0 ? '<p class="warn-txt">有 ' + money(rec.adInferred) + ' 广告花费因商品ID 未登记，按广告计划名里的 SKU 编码推断归属。</p>' : '') +
+        '<button class="btn primary" id="btnSaveDay">保存 ' + date + ' 的数据</button>';
+      document.getElementById('btnSaveDay').onclick = function () { commitDay(rec); };
+    } catch (e) {
+      box.className = 'preview err';
+      box.innerHTML = '<span>⚠ ' + esc(e.message) + '</span>';
+    }
+  }
+
+  function commitDay(rec) {
+    store.added[rec.date] = rec;
+    store.deleted = store.deleted.filter(function (x) { return x !== rec.date; });
+    saveStore();
+    rebuild();
+    current = rec.date;
+    closeModal('modalUpdate');
+    render();
+    toast('已保存 ' + rec.date + ' 的报数');
+  }
+
+  /* ---------- 手动录入 ---------- */
+  function manualDay() {
+    var date = document.getElementById('mDate').value;
+    if (!date) { toast('请选择日期'); return; }
+    var f = function (id) { return toNum(document.getElementById(id).value); };
+    var gmv = f('mGmv'), orders = f('mOrders'), units = f('mUnits');
+    if (gmv <= 0) { toast('总收入需大于 0'); return; }
+    var adRev = f('mAdRev'), adSpend = f('mAdSpend'), affRev = f('mAffRev'), affCom = f('mAffCom'), samples = f('mSamples');
+    var prodCost = f('mProdCost'), logiCost = f('mLogiCost');
+    var sampCost = f('mSampCost');
+    var gp = rnd2(gmv - prodCost - logiCost - sampCost - affCom - adSpend - gmv * 0.19);
+    var rec = {
+      date: date, level: 'summary', gmv: gmv, orders: orders, units: units, samples: samples,
+      adSpend: adSpend, adRev: adRev, affRev: affRev, affCom: affCom,
+      prodCost: prodCost, logiCost: logiCost, sampCost: sampCost,
+      gp: +gp.toFixed(2), gpRate: gp / gmv, source: 'manual'
+    };
+    store.added[date] = rec;
+    store.deleted = store.deleted.filter(function (x) { return x !== date; });
+    saveStore(); rebuild(); current = date;
+    closeModal('modalUpdate');
+    render();
+    toast('已录入 ' + date);
+  }
+
+  /* ---------- 备份 ---------- */
+  function exportJson() {
+    var blob = new Blob([JSON.stringify({ added: store.added, deleted: store.deleted, cost: store.cost }, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'cootry-报数备份-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  function importJson(file) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var o = JSON.parse(fr.result);
+        if (o.added) Object.keys(o.added).forEach(function (k) { store.added[k] = o.added[k]; });
+        if (o.deleted) store.deleted = store.deleted.concat(o.deleted);
+        if (o.cost) Object.keys(o.cost).forEach(function (k) { store.cost[k] = o.cost[k]; });
+        saveStore(); rebuild(); render();
+        toast('备份已合并');
+      } catch (e) { toast('文件格式不正确'); }
+    };
+    fr.readAsText(file);
+  }
+
+  /* ---------- 数据管理 ---------- */
+  function renderManage() {
+    var list = allDays.slice().reverse();
+    var rows = list.map(function (dt) {
+      var d = dayMap[dt], m = derive(d);
+      var src = d.source === 'upload' ? 'Excel 上传' : (d.source === 'manual' ? '手动录入' : '初始导入');
+      return '<tr>' +
+        '<td class="l">' + dt + ' <span class="sku">' + wd(dt) + '</span></td>' +
+        '<td class="l"><span class="chip ' + (d.level === 'detail' ? 'ok' : 'warn') + '">' + (d.level === 'detail' ? '明细' : '汇总') + '</span></td>' +
+        '<td class="l muted">' + src + '</td>' +
+        '<td class="r">' + money(m.gmv) + '</td>' +
+        '<td class="r">' + money(m.gp) + '</td>' +
+        '<td class="r"><button class="link" data-view="' + dt + '">查看</button> ' +
+        (d.source ? '<button class="link danger" data-del="' + dt + '">删除</button>' : '') + '</td></tr>';
+    }).join('');
+    document.getElementById('manageBody').innerHTML = rows || '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+    document.getElementById('manageBody').querySelectorAll('[data-view]').forEach(function (b) {
+      b.onclick = function () { current = b.dataset.view; closeModal('modalManage'); render(); };
+    });
+    document.getElementById('manageBody').querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('删除 ' + b.dataset.del + ' 的数据？')) return;
+        delete store.added[b.dataset.del];
+        if (DATA.days.some(function (d) { return d.date === b.dataset.del; })) store.deleted.push(b.dataset.del);
+        saveStore(); rebuild(); renderManage(); render();
+      };
+    });
+  }
+
+  /* ---------- 成本表 ---------- */
+  var costEditSku = null;
+  function allSkuRefs() {
+    var k = {};
+    function add(d) {
+      (d.products || []).forEach(function (p) { k[p.sku] = 1; });
+      Object.keys(d.unitsBySku || {}).forEach(function (x) { k[x] = 1; });
+    }
+    DATA.days.forEach(add);
+    Object.keys(store.added).forEach(function (dt) { add(store.added[dt]); });
+    return Object.keys(k);
+  }
+  function renderCost() {
+    var keys = costKeys().concat(allSkuRefs()).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort();
+    var rows = keys.map(function (sku) {
+      var custom = !!store.cost[sku], cur = costOf(sku), seed = COST[sku];
+      var pc = num(cur.pc), lg = num(cur.lg), total = pc + lg;
+      var ops = '<button class="link" data-ce="' + esc(sku) + '">编辑</button>';
+      if (custom) ops += ' <button class="link danger" data-cdel="' + esc(sku) + '">' + (seed ? '恢复内置' : '删除') + '</button>';
+      var src = custom ? '自定义' : (seed ? '内置' : '未建档');
+      return '<tr' + (src === '未建档' ? ' class="ph"' : '') + '>' +
+        '<td class="l"><b>' + esc(sku) + '</b></td>' +
+        '<td class="l muted">' + esc(cur.name || '') + '</td>' +
+        '<td class="l idcell">' + ((cur.ids && cur.ids.length) ? cur.ids.join('<br>') : '—') + '</td>' +
+        '<td class="r">' + (pc ? money(pc) : '—') + '</td>' +
+        '<td class="r">' + (lg ? money(lg) : '—') + '</td>' +
+        '<td class="r">' + (total ? money(total) : '—') + '</td>' +
+        '<td class="l muted">' + src + '</td>' +
+        '<td class="r">' + ops + '</td></tr>';
+    }).join('');
+    document.getElementById('costBody').innerHTML = rows || '<tr><td colspan="8" class="empty">暂无成本记录</td></tr>';
+    document.getElementById('costBody').querySelectorAll('[data-ce]').forEach(function (b) {
+      b.onclick = function () { costEdit(b.dataset.ce); };
+    });
+    document.getElementById('costBody').querySelectorAll('[data-cdel]').forEach(function (b) {
+      b.onclick = function () { costDel(b.dataset.cdel); };
+    });
+  }
+  function costEdit(sku) {
+    costEditSku = sku;
+    var c = costOf(sku);
+    document.getElementById('cSku').value = sku;
+    document.getElementById('cName').value = c.name || '';
+    document.getElementById('cPc').value = num(c.pc) || '';
+    document.getElementById('cLg').value = num(c.lg) || '';
+    document.getElementById('cIds').value = (c.ids || []).join(', ');
+    document.getElementById('cCancel').style.display = 'inline-block';
+  }
+  function costCancel() {
+    costEditSku = null;
+    ['cSku', 'cName', 'cPc', 'cLg', 'cIds'].forEach(function (id) { document.getElementById(id).value = ''; });
+    document.getElementById('cCancel').style.display = 'none';
+  }
+  function costSave() {
+    var sku = document.getElementById('cSku').value.trim().toUpperCase();
+    if (!sku) { toast('请填写 SKU 编码'); return; }
+    var name = document.getElementById('cName').value.trim();
+    var pc = toNum(document.getElementById('cPc').value), lg = toNum(document.getElementById('cLg').value);
+    if (pc <= 0 && lg <= 0) { toast('产品成本和物流成本不能都为 0'); return; }
+    var idsTxt = document.getElementById('cIds').value.trim();
+    var ids = idsTxt ? idsTxt.split(/[,\s]+/).filter(function (x) { return /^\d{10,}$/.test(x); }) : ((store.cost[sku] || COST[sku] || {}).ids || []);
+    store.cost[sku] = { name: name || (COST[sku] || {}).name || sku, pc: pc, lg: lg, ids: ids };
+    saveStore(); renderCost(); render(); toast('成本已保存 ' + sku);
+    costCancel();
+  }
+  function costDel(sku) {
+    var msg = COST[sku] ? '清除 ' + sku + ' 的自定义成本，恢复内置成本？' : '删除自定义成本 ' + sku + '？';
+    if (!confirm(msg)) return;
+    delete store.cost[sku];
+    saveStore(); renderCost(); render(); toast('已更新 ' + sku);
+  }
+
+  /* ---------- 其它 ---------- */
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  function bind() {
+    document.getElementById('prevDay').onclick = function () { go(-1); };
+    document.getElementById('nextDay').onclick = function () { go(1); };
+    document.getElementById('datePick').onchange = function (e) {
+      var v = e.target.value;
+      if (!dayMap[v]) { toast('该日期没有数据'); e.target.value = current; return; }
+      current = v; render();
+    };
+    document.getElementById('btnUpdate').onclick = function () {
+      document.getElementById('upDate').value = '';
+      document.getElementById('upPreview').className = 'preview';
+      document.getElementById('upPreview').innerHTML = '<span class="muted">上传后自动解析并预览</span>';
+      openModal('modalUpdate');
+    };
+    document.getElementById('btnManage').onclick = function () { renderManage(); openModal('modalManage'); };
+    document.querySelectorAll('[data-close]').forEach(function (b) {
+      b.onclick = function () { closeModal(b.dataset.close); };
+    });
+    document.querySelectorAll('.modal').forEach(function (m) {
+      m.addEventListener('click', function (e) { if (e.target === m) closeModal(m.id); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') document.querySelectorAll('.modal.show').forEach(function (m) { closeModal(m.id); });
+      if (e.key === 'ArrowLeft' && !document.body.classList.contains('modal-open')) go(-1);
+      if (e.key === 'ArrowRight' && !document.body.classList.contains('modal-open')) go(1);
+    });
+
+    // tabs
+    document.querySelectorAll('#modalUpdate .tab').forEach(function (t) {
+      t.onclick = function () {
+        document.querySelectorAll('#modalUpdate .tab').forEach(function (x) { x.classList.remove('on'); });
+        document.querySelectorAll('#modalUpdate .tabpane').forEach(function (x) { x.classList.remove('on'); });
+        t.classList.add('on');
+        document.getElementById(t.dataset.tab).classList.add('on');
+      };
+    });
+
+    // 上传
+    [['fileOrders', 'orders', parseOrders, '订单表'], ['fileAd', 'ad', parseAd, '广告表'], ['fileAff', 'aff', parseAff, '联盟表']]
+      .forEach(function (cfg) {
+        var input = document.getElementById(cfg[0]);
+        input.onchange = async function () {
+          var file = input.files[0];
+          if (!file) return;
+          var label = input.parentElement.querySelector('.fname');
+          label.textContent = '解析中…';
+          try {
+            parsed[cfg[1]] = await cfg[2](file);
+            label.textContent = '✓ ' + file.name;
+            label.classList.add('ok');
+            if (cfg[1] === 'orders' && parsed.orders.date) document.getElementById('upDate').value = parsed.orders.date;
+            if (parsed.orders) showPreview(); else toast(cfg[3] + '已解析，请补齐订单表');
+            if (cfg[1] !== 'orders' && parsed.orders) showPreview();
+          } catch (e) {
+            label.textContent = '✕ ' + e.message;
+            label.classList.remove('ok');
+          }
+        };
+      });
+    document.getElementById('upDate').onchange = function () { if (parsed.orders) showPreview(); };
+
+    // 手动
+    document.getElementById('mSave').onclick = manualDay;
+    document.getElementById('btnExport').onclick = exportJson;
+    document.getElementById('fileBackup').onchange = function (e) {
+      if (e.target.files[0]) importJson(e.target.files[0]);
+    };
+    document.getElementById('btnSeed').onclick = function () {
+      if (!confirm('清空本机新增/修改的数据与成本，恢复到内置历史？')) return;
+      store = { added: {}, deleted: [], cost: {} };
+      saveStore(); rebuild(); render(); closeModal('modalUpdate');
+      toast('已恢复内置数据');
+    };
+
+    // 成本表
+    document.getElementById('btnCost').onclick = function () { renderCost(); openModal('modalCost'); };
+    document.getElementById('cSave').onclick = costSave;
+    document.getElementById('cCancel').onclick = costCancel;
+
+    // 图表切换
+    document.querySelectorAll('[data-metric]').forEach(function (b) {
+      b.onclick = function () {
+        document.querySelectorAll('[data-metric]').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        chartMetric = b.dataset.metric;
+        renderChart();
+      };
+    });
+    document.querySelectorAll('[data-range]').forEach(function (b) {
+      b.onclick = function () {
+        document.querySelectorAll('[data-range]').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        chartRange = b.dataset.range;
+        renderChart();
+      };
+    });
+
+    // 商品表排序
+    document.getElementById('prodHead').addEventListener('click', function (e) {
+      var th = e.target.closest('th');
+      if (!th || !th.dataset.k) return;
+      if (sortKey === th.dataset.k) sortDir = -sortDir;
+      else { sortKey = th.dataset.k; sortDir = th.dataset.k === 'name' ? 1 : -1; }
+      renderProducts();
+    });
+    document.getElementById('prodSearch').oninput = function (e) {
+      keyword = e.target.value.trim();
+      renderProducts();
+    };
+
+    // 商品表：当日明细 / 时段汇总 切换
+    document.querySelectorAll('#prodTabs [data-ptab]').forEach(function (b) {
+      b.onclick = function () {
+        prodTab = b.dataset.ptab;
+        document.querySelectorAll('#prodTabs [data-ptab]').forEach(function (x) { x.classList.toggle('on', x === b); });
+        sortKey = prodTab === 'range' ? 'gmv' : 'rev';
+        sortDir = -1;
+        renderProducts();
+      };
+    });
+    document.getElementById('rangeStart').onchange = function () { renderProducts(); };
+    document.getElementById('rangeEnd').onchange = function () { renderProducts(); };
+
+    var rt = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(renderChart, 150);
+    });
+  }
+
+  /* ---------- 启动 ---------- */
+  async function boot() {
+    await fetchState();
+    rebuild();
+    current = current || allDays[allDays.length - 1] || '2026-11-23';
+    bind();
+    render();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
 </script>
 </body>
 </html>
