@@ -1,6 +1,7 @@
 {
-  "name": "cootry-dashboard",
-  "version": "1.0.0",
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "pg": "^8.13.0"
   }
