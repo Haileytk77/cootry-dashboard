@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COOTRY TikTok Shop 报数看板</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box;font-family:system-ui, sans-serif;margin:0;padding:0}
+body{background:#f4f6f8;padding:16px;color:#222}
+.container{max-width:1400px;margin:0 auto}
+h1{font-size:22px;margin-bottom:16px}
+.top-cards{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 6px #00000012}
+.card .label{color:#666;font-size:13px}
+.card .val{font-size:24px;font-weight:bold;margin-top:4px}
+.panel{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px #00000012;margin-bottom:16px}
+.panel h3{margin-bottom:12px;font-size:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+button, select, input{padding:7px 10px;border-radius:6px;border:1px solid #ccc;font-size:14px}
+button{background:#2563eb;color:#fff;border:none;cursor:pointer}
+button.secondary{background:#eee;color:#222}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid #e5e7eb;padding:8px;text-align:left}
+th{background:#f9fafb}
+.chart-wrap{height:300px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tab{padding:8px 14px;background:#eee;border-radius:6px;cursor:pointer}
+.tab.active{background:#2563eb;color:#fff}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>COOTRY 店铺每日报数看板</h1>
+<div class="top-cards">
+  <div class="card"><div class="label">店铺总GMV</div><div class="val" id="totalGmv">$0.00</div></div>
+  <div class="card"><div class="label">总出单件数（扣样品）</div><div class="val" id="totalQty">0</div></div>
+  <div class="card"><div class="label">总利润</div><div class="val" id="totalProfit">$0.00</div></div>
+  <div class="card"><div class="label">利润率</div><div class="val" id="profitRate">0%</div></div>
+  <div class="card"><div class="label">广告总花费</div><div class="val" id="adSpend">$0.00</div></div>
+  <div class="card"><div class="label">整体广告ROI</div><div class="val" id="roi">0.00</div></div>
+</div>
+
+<div class="panel">
+  <div class="tabs">
+    <div class="tab active" data-tab="daily">每日数据录入</div>
+    <div class="tab" data-tab="product">商品时段汇总表</div>
+    <div class="tab" data-tab="cost">产品成本物流表</div>
+  </div>
+
+  <div id="daily">
+    <div class="row">
+      <input type="date" id="dayDate">
+      <button onclick="addDayRow()">新增当日行</button>
+      <button class="secondary" onclick="saveData()">保存到云端</button>
+      <button class="secondary" onclick="loadData()">从云端刷新</button>
+    </div>
+    <table id="dailyTable">
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>原始订单金额</th>
+          <th>Tax</th>
+          <th>平台折扣</th>
+          <th>样品件数</th>
+          <th>原始件数</th>
+          <th>广告花费</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="chart-wrap"><canvas id="chartLine"></canvas></div>
+  </div>
+
+  <div id="product" class="hidden">
+    <div class="row">
+      <input type="date" id="sStart">
+      <input type="date" id="sEnd">
+      <button onclick="calcProductTable()">统计该时段</button>
+    </div>
+    <table id="productTable">
+      <thead>
+        <tr>
+          <th>商品ID</th>
+          <th>商品名称</th>
+          <th>GMV</th>
+          <th>出单件数</th>
+          <th>广告花费</th>
+          <th>广告ROI</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="cost" class="hidden">
+    <div class="row">
+      <button onclick="addCostRow()">新增产品成本行</button>
+      <button class="secondary" onclick="saveData()">保存</button>
+    </div>
+    <table id="costTable">
+      <thead>
+        <tr>
+          <th>商品ID</th>
+          <th>采购成本</th>
+          <th>物流成本</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<script>
+// ⚠️ 这里填你的Vercel部署之后的接口地址！部署完替换
+const API = "/api/state";
+let store = {daily:[],cost:[],product:[]};
+let chartIns = null;
+
+// 标签切换
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.querySelectorAll('#daily,#product,#cost').forEach(el=>el.classList.add('hidden'));
+  document.getElementById(t.dataset.tab).classList.remove('hidden');
+})
+
+async function loadData(){
+  const res = await fetch(API+"?key=main_data");
+  const json = await res.json();
+  if(json && Object.keys(json).length>0) store = json;
+  renderDaily();renderCost();renderProduct();calcSummary();drawChart();
+}
+async function saveData(){
+  await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(store)});
+  alert("✅ 已同步云端数据库！");
+}
+
+function addDayRow(){
+  const d = document.getElementById("dayDate").value;
+  if(!d) return alert("先选日期");
+  store.daily.push({date:d,amount:0,tax:0,discount:0,sampleQty:0,rawQty:0,ad:0});
+  renderDaily();calcSummary();drawChart();
+}
+function addCostRow(){
+  store.cost.push({skuId:"",cost:0,logistics:0});
+  renderCost();
+}
+
+function renderDaily(){
+  const tb = document.querySelector("#dailyTable tbody");
+  tb.innerHTML = "";
+  store.daily.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input value="${r.date}" onchange="store.daily[${i}].date=this.value"></td>
+      <td><input type="number" step="0.01" value="${r.amount}" onchange="store.daily[${i}].amount=Number(this.value)"></td>
+      <td><input type="number" step="0.01" value="${r.tax}" onchange="store.daily[${i}].tax=Number(this.value)"></td>
+      <td><input type="number" step="0.01" value="${r.discount}" onchange="store.daily[${i}].discount=Number(this.value)"></td>
+      <td><input type="number" value="${r.sampleQty}" onchange="store.daily[${i}].sampleQty=Number(this.value)"></td>
+      <td><input type="number" value="${r.rawQty}" onchange="store.daily[${i}].rawQty=Number(this.value)"></td>
+      <td><input type="number" step="0.01" value="${r.ad}" onchange="store.daily[${i}].ad=Number(this.value)"></td>
+      <td><button onclick="store.daily.splice(${i},1);renderDaily();calcSummary();drawChart()">删除</button></td>
+    `;
+    tb.appendChild(tr);
+  })
+}
+function renderCost(){
+  const tb = document.querySelector("#costTable tbody");
+  tb.innerHTML = "";
+  store.cost.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input value="${r.skuId}" onchange="store.cost[${i}].skuId=this.value"></td>
+      <td><input type="number" step="0.01" value="${r.cost}" onchange="store.cost[${i}].cost=Number(this.value)"></td>
+      <td><input type="number" step="0.01" value="${r.logistics}" onchange="store.cost[${i}].logistics=Number(this.value)"></td>
+      <td><button onclick="store.cost.splice(${i},1);renderCost()">删除</button></td>
+    `;
+    tb.appendChild(tr);
+  })
+}
+
+function calcSummary(){
+  let gmvAll=0,qtyAll=0,adAll=0,profitAll=0;
+  store.daily.forEach(row=>{
+    const realGmv = row.amount - row.tax + row.discount;
+    const realQty = Math.max(0, row.rawQty - row.sampleQty);
+    gmvAll += realGmv;
+    qtyAll += realQty;
+    adAll += row.ad;
+  })
+  // 简易毛利：GMV减去匹配到的成本（你后续可以完善）
+  const rate = gmvAll ? (profitAll/gmvAll*100).toFixed(1) : 0;
+  const roi = adAll>0 ? (gmvAll/adAll).toFixed(2) : 0;
+  document.getElementById("totalGmv").innerText = "$"+gmvAll.toFixed(2);
+  document.getElementById("totalQty").innerText = qtyAll;
+  document.getElementById("totalProfit").innerText = "$"+profitAll.toFixed(2);
+  document.getElementById("profitRate").innerText = rate+"%";
+  document.getElementById("adSpend").innerText = "$"+adAll.toFixed(2);
+  document.getElementById("roi").innerText = roi;
+}
+
+function calcProductTable(){
+  // 时段汇总逻辑，你后续导入商品明细时在这里扩充
+  document.querySelector("#productTable tbody").innerHTML="<tr><td colspan='6'>后续导入商品明细后自动统计</td></tr>"
+}
+
+function drawChart(){
+  const ctx = document.getElementById("chartLine").getContext("2d");
+  const sorted = [...store.daily].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const labels = sorted.map(x=>x.date);
+  const gmvData = sorted.map(x=>x.amount - x.tax + x.discount);
+  if(chartIns) chartIns.destroy();
+  chartIns = new Chart(ctx,{
+    type:"line",
+    data:{labels:labels,datasets:[{label:"每日GMV",data:gmvData,borderColor:"#2563eb"}]},
+    options:{responsive:true,maintainAspectRatio:false}
+  })
+}
+window.onload=loadData;
+</script>
+</body>
+</html>
