@@ -5075,9 +5075,9 @@ table.list .r{text-align:right}
           var dd = num(r.rev) - num(pr.rev);
           if (!pr.rev) { rChgTxt = dd > 0 ? '新增' : '—'; rChgCls = dd > 0 ? 'up' : 'flat'; }
           else {
-            var r = dd / pr.rev;
-            rChgTxt = (r >= 0 ? '▲ ' : '▼ ') + Math.abs(r * 100).toFixed(1) + '%';
-            rChgCls = r >= 0 ? 'up' : 'down';
+            var rch = dd / pr.rev;
+            rChgTxt = (rch >= 0 ? '▲ ' : '▼ ') + Math.abs(rch * 100).toFixed(1) + '%';
+            rChgCls = rch >= 0 ? 'up' : 'down';
           }
         } else {
           rChgTxt = num(r.rev) > 0 ? '新增' : '—'; rChgCls = num(r.rev) > 0 ? 'up' : 'flat';
